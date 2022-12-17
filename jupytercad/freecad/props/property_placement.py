@@ -30,7 +30,7 @@ class App_PropertyPlacement(BaseProp):
         }
 
     @staticmethod
-    def jcad_to_fc(prop_value: Any, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: Any, jcad_file=None, fc_file=None, fc_object=None) -> Any:
         if not fc:
             return
 

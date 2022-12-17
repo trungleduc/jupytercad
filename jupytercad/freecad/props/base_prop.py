@@ -15,5 +15,5 @@ class BaseProp(ABC):
 
     @staticmethod
     @abstractmethod
-    def jcad_to_fc(prop_value: Any, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: Any, jcad_file=None, fc_file=None, fc_object=None) -> Any:
         pass

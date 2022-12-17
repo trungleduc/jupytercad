@@ -1,5 +1,5 @@
 import traceback
-from typing import Dict, List
+from typing import Dict, List, Type
 import tempfile
 import base64
 import os
@@ -25,7 +25,7 @@ class FCStd:
         self._metadata = {}
         self._id = None
         self._visible = True
-        self._prop_handlers: Dict[str, BaseProp] = {}
+        self._prop_handlers: Dict[str, Type[BaseProp]] = {}
         for Cls in Props.__dict__.values():
             if isinstance(Cls, type) and issubclass(Cls, BaseProp):
                 self._prop_handlers[Cls.name()] = Cls
@@ -95,7 +95,7 @@ class FCStd:
                     prop_handler = self._prop_handlers.get(prop_type, None)
                     if prop_handler is not None:
                         fc_value = prop_handler.jcad_to_fc(
-                            prop_value, objects, fc_file
+                            prop_value, objects, fc_file, fc_obj
                         )
                         if fc_value:
                             setattr(fc_obj, prop, fc_value)

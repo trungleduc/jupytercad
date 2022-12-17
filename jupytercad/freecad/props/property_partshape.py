@@ -15,6 +15,6 @@ class Part_PropertyPartShape(BaseProp):
         return buffer.getvalue()
 
     @staticmethod
-    def jcad_to_fc(prop_value: str, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: str, jcad_file=None, fc_file=None, fc_object=None) -> Any:
         """PropertyPartShape is readonly"""
         return None

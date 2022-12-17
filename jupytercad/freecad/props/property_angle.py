@@ -13,5 +13,5 @@ class App_PropertyAngle(BaseProp):
         return prop_value.getValueAs('deg').Value
 
     @staticmethod
-    def jcad_to_fc(prop_value: float, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: float, jcad_file=None, fc_file=None, fc_object=None) -> Any:
         return prop_value

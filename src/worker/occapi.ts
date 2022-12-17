@@ -12,6 +12,7 @@ import { ICut } from '../_interface/cut';
 import { IFuse } from '../_interface/fuse';
 import { IIntersection } from '../_interface/intersection';
 import { v4 as uuid } from 'uuid';
+import { ISketchObject } from '../_interface/sketch';
 
 const SHAPE_CACHE = new Map<string, TopoDS_Shape>();
 export function operatorCache<T>(
@@ -207,6 +208,14 @@ function _Intersection(
   return;
 }
 
+export function _SketchObject(
+  arg: ISketchObject,
+  content: IJCadContent
+): TopoDS_Shape | undefined {
+  console.log('arg', arg);
+  return undefined;
+}
+
 export function _loadBrep(arg: { content: string }): TopoDS_Shape | undefined {
   const oc = getOcc();
   const fakeFileName = `${uuid()}.brep`;
@@ -239,5 +248,6 @@ export const ShapesFactory: {
   'Part::Torus': Torus,
   'Part::Cut': _Cut,
   'Part::MultiFuse': _Fuse,
-  'Part::MultiCommon': _Intersection
+  'Part::MultiCommon': _Intersection,
+  'Sketcher::SketchObject': _SketchObject
 };
