@@ -13,5 +13,5 @@ class App_PropertyBool(BaseProp):
         return prop_value
 
     @staticmethod
-    def jcad_to_fc(prop_value: bool, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: bool, jcad_file=None, fc_file=None, fc_object=None) -> Any:
         return prop_value
