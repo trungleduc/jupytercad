@@ -3,6 +3,7 @@
   "description": "Part::GeomCircle",
   "title": "IGeomCircle",
   "required": [
+    "TypeId",
     "CenterX",
     "CenterY",
     "CenterZ",
@@ -14,6 +15,10 @@
   ],
   "additionalProperties": false,
   "properties": {
+    "TypeId": {
+     "const": "Part::GeomCircle",
+     "description": "Geometry type"
+    },
     "CenterX": {
       "type": "number",
       "description": "CenterX"

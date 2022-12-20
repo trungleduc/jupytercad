@@ -14,12 +14,13 @@ class Part_GeomCircle(BaseProp):
         return 'Part::GeomCircle'
 
     @staticmethod
-    def fc_to_jcad(prop_value: Any, jcad_file=None, fc_file=None) -> Any:
+    def fc_to_jcad(prop_value: Any, **kwargs) -> Any:
         center = prop_value.Center
         radius = prop_value.Radius
         angle = prop_value.AngleXU
         normal = prop_value.Axis
         return {
+            'TypeId': Part_GeomCircle.name(),
             'CenterX': center.x,
             'CenterY': center.y,
             'CenterZ': center.z,
@@ -31,7 +32,7 @@ class Part_GeomCircle(BaseProp):
         }
 
     @staticmethod
-    def jcad_to_fc(prop_value: Dict, jcad_file=None, fc_file=None) -> Any:
+    def jcad_to_fc(prop_value: Dict, fc_object: Any, **kwargs) -> Any:
         if not fc:
             return
 
@@ -43,4 +44,5 @@ class Part_GeomCircle(BaseProp):
         )
         AngleXU = prop_value['AngleXU']
         Radius = prop_value['Radius']
+        print('################## in geome', prop_value, type(fc_object))
         return None
