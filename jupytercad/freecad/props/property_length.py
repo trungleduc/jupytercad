@@ -9,9 +9,9 @@ class App_PropertyLength(BaseProp):
         return 'App::PropertyLength'
 
     @staticmethod
-    def fc_to_jcad(prop_value: Any, jcad_file=None, fc_file=None) -> Any:
+    def fc_to_jcad(prop_value: Any, **kwargs) -> Any:
         return prop_value.Value
 
     @staticmethod
-    def jcad_to_fc(prop_value: Any, jcad_file=None, fc_file=None, fc_object=None) -> Any:
+    def jcad_to_fc(prop_value: Any, **kwargs) -> Any:
         return prop_value
