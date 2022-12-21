@@ -6,11 +6,8 @@
   "additionalProperties": false,
   "properties": {
     "AttachmentOffset": {
-      "type": "array",
-      "description": "The attachment offset",
-      "items": {
-        "type": "number"
-      }
+      "$ref": "./placement.json",
+      "description": "The attachment offset"
     },
     "Geometry": {
       "type": "array",
@@ -19,6 +16,9 @@
         "anyOf": [
           {
             "$ref": "./geomCircle.json"
+          },
+          {
+            "$ref": "./geomLineSegment.json"
           }
         ]
       }
