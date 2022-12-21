@@ -54,6 +54,19 @@ mainBuild:
     - symbol: TopTools_IndexedDataMapOfShapeListOfShape
     - symbol: TopTools_IndexedMapOfShape
     - symbol: TopTools_ListOfShape
+    - symbol: GC_MakeCircle
+    - symbol: gp_Ax2
+    - symbol: gp_Circ
+    - symbol: gp_XYZ
+    - symbol: BRepBuilderAPI_MakeEdge
+    - symbol: BRepBuilderAPI_MakeWire
+    - symbol: GC_Root
+    - symbol: Geom_Geometry
+    - symbol: Geom_Circle
+    - symbol: Geom_Conic
+    - symbol: Geom_Curve
+    - symbol: Handle_Geom_Curve
+    - symbol: Handle_Geom_Circle
   emccFlags:
     - "-flto"
     - "-fexceptions"

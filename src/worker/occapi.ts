@@ -13,6 +13,7 @@ import { IFuse } from '../_interface/fuse';
 import { IIntersection } from '../_interface/intersection';
 import { v4 as uuid } from 'uuid';
 import { ISketchObject } from '../_interface/sketch';
+import { _GeomCircle } from './geometry/geomCircle';
 
 const SHAPE_CACHE = new Map<string, TopoDS_Shape>();
 export function operatorCache<T>(
@@ -213,6 +214,11 @@ export function _SketchObject(
   content: IJCadContent
 ): TopoDS_Shape | undefined {
   console.log('arg', arg);
+  for (const geom of arg.Geometry) {
+    if(geom.TypeId === 'Part::GeomCircle'){
+      return _GeomCircle(geom)
+    }
+  }
   return undefined;
 }
 
