@@ -39,10 +39,14 @@ class Part_GeomCircle(BaseProp):
         Center = fc.app.Base.Vector(
             prop_value['CenterX'], prop_value['CenterY'], prop_value['CenterZ']
         )
+        fc_object.Center = Center
+
         Axis = fc.app.Base.Vector(
             prop_value['NormalX'], prop_value['NormalY'], prop_value['NormalZ']
         )
-        AngleXU = prop_value['AngleXU']
-        Radius = prop_value['Radius']
-        print('################## in geome', prop_value, type(fc_object))
+        fc_object.Axis = Axis
+    
+        fc_object.AngleXU = prop_value['AngleXU']
+        fc_object.Radius = prop_value['Radius']
+        
         return None
