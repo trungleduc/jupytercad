@@ -16,8 +16,8 @@
   "additionalProperties": false,
   "properties": {
     "TypeId": {
-     "const": "Part::GeomCircle",
-     "description": "Geometry type"
+      "const": "Part::GeomCircle",
+      "description": "Geometry type"
     },
     "CenterX": {
       "type": "number",

@@ -215,8 +215,8 @@ export function _SketchObject(
 ): TopoDS_Shape | undefined {
   console.log('arg', arg);
   for (const geom of arg.Geometry) {
-    if(geom.TypeId === 'Part::GeomCircle'){
-      return _GeomCircle(geom)
+    if (geom.TypeId === 'Part::GeomCircle') {
+      return _GeomCircle(geom);
     }
   }
   return undefined;

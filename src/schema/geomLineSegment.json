@@ -2,20 +2,12 @@
   "type": "object",
   "description": "Part::GeomLineSegment",
   "title": "IGeomLineSegment",
-  "required": [
-    "TypeId",
-    "StartX",
-    "StartY",
-    "StartZ",
-    "EndX",
-    "EndY",
-    "EndZ"
-  ],
+  "required": ["TypeId", "StartX", "StartY", "StartZ", "EndX", "EndY", "EndZ"],
   "additionalProperties": false,
   "properties": {
     "TypeId": {
-     "const": "Part::GeomLineSegment",
-     "description": "Geometry type"
+      "const": "Part::GeomLineSegment",
+      "description": "Geometry type"
     },
     "StartX": {
       "type": "number",
