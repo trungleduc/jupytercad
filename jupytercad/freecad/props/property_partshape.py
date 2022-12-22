@@ -10,6 +10,7 @@ class Part_PropertyPartShape(BaseProp):
 
     @staticmethod
     def fc_to_jcad(prop_value: Any, **kwargs) -> Any:
+        return None
         buffer = StringIO()
         prop_value.exportBrep(buffer)
         return buffer.getvalue()

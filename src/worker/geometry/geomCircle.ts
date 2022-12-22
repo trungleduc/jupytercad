@@ -8,8 +8,7 @@ export function _GeomCircle(arg: IGeomCircle): any {
   const radius = arg.Radius;
   const circle = new oc.GC_MakeCircle_6(center, norm, radius).Value();
   const edge = new oc.BRepBuilderAPI_MakeEdge_8(circle.get().Circ()).Edge();
-  let circleWire = new oc.BRepBuilderAPI_MakeWire_2(edge).Wire();
-  console.log('circleWire', circleWire);
-  
+  const circleWire = new oc.BRepBuilderAPI_MakeWire_2(edge).Wire();
+
   return circleWire;
 }
