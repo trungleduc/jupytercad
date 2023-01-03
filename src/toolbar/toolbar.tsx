@@ -4,6 +4,7 @@ import { FormDialog } from './formdialog';
 import { ToolbarModel } from './model';
 import { OperatorToolbarReact } from './operatortoolbar';
 import { PartToolbarReact } from './parttoolbar';
+import { SketcherToolbarReact } from './sketchertoolbar';
 import { UserToolbarReact } from './usertoolbar';
 
 interface IProps {
@@ -11,12 +12,12 @@ interface IProps {
 }
 
 interface IState {
-  selected: 'PART' | 'OPERATOR';
+  selected: 'PART' | 'OPERATOR' | 'SKETCHER';
 }
 export class ToolbarReact extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { selected: 'PART' };
+    this.state = { selected: 'SKETCHER' }; // TODO Swtich back
     this.props.toolbarModel.jcadModel?.clientStateChanged.connect(
       this._onClientSharedStateChanged
     );
@@ -108,11 +109,14 @@ export class ToolbarReact extends React.Component<IProps, IState> {
         {this.state.selected === 'OPERATOR' && (
           <OperatorToolbarReact toolbarModel={this.props.toolbarModel} />
         )}
+        {this.state.selected === 'SKETCHER' && (
+          <SketcherToolbarReact toolbarModel={this.props.toolbarModel} />
+        )}
         <UserToolbarReact toolbarModel={this.props.toolbarModel} />
       </div>
     );
   }
 
   private _lastForm?: { dialog: FormDialog; title: string };
-  private _toolbarOption = ['PART', 'OPERATOR'];
+  private _toolbarOption = ['PART', 'OPERATOR', 'SKETCHER'];
 }
