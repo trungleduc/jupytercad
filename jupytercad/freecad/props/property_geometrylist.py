@@ -25,4 +25,4 @@ class Part_PropertyGeometryList(BaseProp):
         for idx, jcad_geo in enumerate(prop_value) :
             if jcad_geo['TypeId'] in geom_handlers:
                 geom_handlers[jcad_geo['TypeId']].jcad_to_fc(jcad_geo, fc_object=fc_prop[idx])
-        return None
+        return fc_prop
