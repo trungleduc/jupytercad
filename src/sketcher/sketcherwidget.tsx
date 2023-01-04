@@ -1,61 +1,22 @@
-import { Dialog } from '@jupyterlab/apputils';
+
 import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
-import { nearest } from '../tools';
+import { drawPoint } from './helper';
 
-import { IDict } from '../types';
-import { ToolbarModel } from './model';
+import { PanZoom } from './panzoom';
+import { IPosition, SketcherModel } from './sketchermodel';
 
-interface IProps {}
+interface IProps {
+  model: SketcherModel
+}
 interface IState {
   mode?: 'POINT' | 'LINE';
   currentPointer?: IPosition;
 }
 
-interface IPosition {
-  x: number;
-  y: number;
-}
 const GRID_SIZE = 64;
 
-class PanZoom {
-  constructor(private ctx: CanvasRenderingContext2D) {
-    this.x = 0;
-    this.y = 0;
-    this.scale = 1;
-  }
-  apply = () => {
-    this.ctx.setTransform(this.scale, 0, 0, this.scale, this.x, this.y);
-  };
-  scaleAt = (x, y, sc) => {
-    // x & y are screen coords, not world
-    this.scale *= sc;
-    this.x = x - (x - this.x) * sc;
-    this.y = y - (y - this.y) * sc;
-  };
-  toWorld = (screenCoor: IPosition, snap = false, tol = 0.1): IPosition => {
-    // converts from screen coords to world coords
-    const inv = 1 / this.scale;
-    let x = (screenCoor.x - this.x) * inv;
-    let y = (screenCoor.y - this.y) * inv;
-    if (snap) {
-      x = nearest(x / GRID_SIZE, tol) * GRID_SIZE;
-      y = nearest(y / GRID_SIZE, tol) * GRID_SIZE;
-    }
-    return { x, y };
-  };
-  toScreen(worldPos: IPosition): IPosition {
-    const x = worldPos.x * this.scale + this.x;
-    const y = worldPos.y * this.scale + this.y;
-    return { x, y };
-  }
-
-  x: number;
-  y: number;
-  scale: number;
-}
-
-class SketcherReactWidget extends React.Component<IProps, IState> {
+export class SketcherReactWidget extends React.Component<IProps, IState> {
   constructor(props) {
     super(props);
     this.state = {};
@@ -88,7 +49,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     );
     canvas.addEventListener('wheel', this.mouseEvents, { passive: false });
     const ctx = canvas.getContext('2d')!;
-    this._panZoom = new PanZoom(ctx);
+    this._panZoom = new PanZoom(ctx, this._gridSize);
     this._panZoom.x = canvas.width / 2;
     this._panZoom.y = canvas.height / 2;
     requestAnimationFrame(this.update);
@@ -182,7 +143,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.closePath();
   };
 
-  drawPoint = (x: number, y: number) => {
+  drawPointer = (x: number, y: number) => {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
@@ -207,12 +168,15 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.closePath();
 
     const newScreenPos = panZoom.toScreen(worldCoord);
-    ctx.beginPath();
-    ctx.fillStyle = 'crimson';
-    ctx.rect(newScreenPos.x - 3, newScreenPos.y - 3, 6, 6);
-    ctx.closePath();
-    ctx.fill();
+    drawPoint(ctx, newScreenPos, 'crimson')
   };
+
+  draw = () => {
+    this.props.model.points.forEach((val, key) =>{
+
+    })
+  }
+
   update = () => {
     const canvas = this._canvasRef.current!;
     const currentDiv = this._divRef.current!;
@@ -256,7 +220,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       mouse.drag = false;
     }
     this.drawGrid(this._gridSize);
-    this.drawPoint(mouse.x, mouse.y);
+    this.drawPointer(mouse.x, mouse.y);
     requestAnimationFrame(this.update);
   };
   currentPointer(): IPosition | undefined {
@@ -317,24 +281,3 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
   //   document.body.getAttribute('data-jp-theme-light') === 'true';
 }
 
-export interface ISketcherDialogOptions {
-  toolbarModel: ToolbarModel;
-}
-
-export class SketcherDialog extends Dialog<IDict> {
-  constructor(options: ISketcherDialogOptions) {
-    const body = <SketcherReactWidget />;
-    super({ title: 'Sketcher', body, buttons: [] });
-    this.addClass('jpcad-sketcher-SketcherDialog');
-    // console.log('this.node.firstChild', this.node.firstChild);
-
-    // const observer = new MutationObserver((e) => {
-    //   console.log('mutations:', e);
-    // });
-    // observer.observe( this.node.firstChild!, {attributes:true});
-    // this.node.firstChild!.addEventListener('resize', ()=>{
-    //   console.log('eee');
-
-    // })
-  }
-}

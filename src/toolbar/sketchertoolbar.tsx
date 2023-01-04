@@ -2,7 +2,7 @@ import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
 
 import { ToolbarModel } from './model';
-import { SketcherDialog } from './sketcherwidget';
+import { SketcherDialog } from '../sketcher/sketcherdialog';
 
 interface IProps {
   toolbarModel: ToolbarModel;
