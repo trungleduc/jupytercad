@@ -1,6 +1,7 @@
 import { Dialog } from '@jupyterlab/apputils';
 import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
+import { nearest } from '../tools';
 
 import { IDict } from '../types';
 import { ToolbarModel } from './model';
@@ -8,12 +9,15 @@ import { ToolbarModel } from './model';
 interface IProps {}
 interface IState {
   mode?: 'POINT' | 'LINE';
+  currentPointer?: IPosition;
 }
 
 interface IPosition {
   x: number;
   y: number;
 }
+const GRID_SIZE = 64;
+
 class PanZoom {
   constructor(private ctx: CanvasRenderingContext2D) {
     this.x = 0;
@@ -29,13 +33,16 @@ class PanZoom {
     this.x = x - (x - this.x) * sc;
     this.y = y - (y - this.y) * sc;
   };
-  toWorld = (screenCoor: IPosition): IPosition => {
+  toWorld = (screenCoor: IPosition, snap = false, tol = 0.1): IPosition => {
     // converts from screen coords to world coords
-    const point = { x: 0, y: 0 };
     const inv = 1 / this.scale;
-    point.x = (screenCoor.x - this.x) * inv;
-    point.y = (screenCoor.y - this.y) * inv;
-    return point;
+    let x = (screenCoor.x - this.x) * inv;
+    let y = (screenCoor.y - this.y) * inv;
+    if (snap) {
+      x = nearest(x / GRID_SIZE, tol) * GRID_SIZE;
+      y = nearest(y / GRID_SIZE, tol) * GRID_SIZE;
+    }
+    return { x, y };
   };
   toScreen(worldPos: IPosition): IPosition {
     const x = worldPos.x * this.scale + this.x;
@@ -106,35 +113,37 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       this._mouse.wheel += -(e as WheelEvent).deltaY;
       e.preventDefault();
     }
+    const currentPos = this.currentPointer();
+    if (currentPos) {
+      this.setState(old => ({
+        ...old,
+        currentPointer: {
+          x: parseFloat((currentPos.x / this._gridSize).toFixed(2)),
+          y: parseFloat((currentPos.y / this._gridSize).toFixed(2))
+        }
+      }));
+    }
   };
 
-  drawGrid = (gridScreenSize = 128, adaptive = true) => {
+  drawGrid = (gridScreenSize = 128) => {
     if (!this._canvasRef.current) {
       return;
     }
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current;
     const ctx = canvas.getContext('2d')!;
-    let scale: number, gridScale: number, size: number, x: number, y: number;
 
     const w = canvas.width;
     const h = canvas.height;
-    if (adaptive) {
-      scale = 1 / panZoom.scale;
-      gridScale = 2 ** (Math.log2(gridScreenSize * scale) | 0);
-      size = Math.max(w, h) * scale + gridScale * 2;
-      x = (((-panZoom.x * scale - gridScale) / gridScale) | 0) * gridScale;
-      y = (((-panZoom.y * scale - gridScale) / gridScale) | 0) * gridScale;
-    } else {
-      gridScale = gridScreenSize;
-      size = Math.max(w, h) / panZoom.scale + gridScale * 2;
-      this._topLeft = panZoom.toWorld({ x: 0, y: 0 });
-      x = Math.floor(this._topLeft.x / gridScale) * gridScale;
-      y = Math.floor(this._topLeft.y / gridScale) * gridScale;
-      if (size / gridScale > this._gridLimit) {
-        size = gridScale * this._gridLimit;
-      }
+    const gridScale = gridScreenSize;
+    let size = Math.max(w, h) / panZoom.scale + gridScale * 2;
+    this._topLeft = panZoom.toWorld({ x: 0, y: 0 });
+    const x = Math.floor(this._topLeft.x / gridScale) * gridScale;
+    const y = Math.floor(this._topLeft.y / gridScale) * gridScale;
+    if (size / gridScale > this._gridLimit) {
+      size = gridScale * this._gridLimit;
     }
+
     panZoom.apply();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#ccc';
@@ -177,7 +186,8 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
-    const worldCoord = panZoom.toWorld({ x, y });
+    const worldCoord = panZoom.toWorld({ x, y }, true);
+
     panZoom.apply();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#000';
@@ -195,6 +205,13 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.setTransform(1, 0, 0, 1, 0, 0); //reset the transform so the lineWidth is 1
     ctx.stroke();
     ctx.closePath();
+
+    const newScreenPos = panZoom.toScreen(worldCoord);
+    ctx.beginPath();
+    ctx.fillStyle = 'crimson';
+    ctx.rect(newScreenPos.x - 3, newScreenPos.y - 3, 6, 6);
+    ctx.closePath();
+    ctx.fill();
   };
   update = () => {
     const canvas = this._canvasRef.current!;
@@ -238,11 +255,13 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     } else if (mouse.drag) {
       mouse.drag = false;
     }
-    this.drawGrid(this._gridSize, false);
-
+    this.drawGrid(this._gridSize);
     this.drawPoint(mouse.x, mouse.y);
     requestAnimationFrame(this.update);
   };
+  currentPointer(): IPosition | undefined {
+    return this._panZoom?.toWorld(this._mouse, true);
+  }
   render(): React.ReactNode {
     return (
       <div
@@ -272,6 +291,9 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
           className="jpcad-sketcher-Sketcher-Canvas"
           ref={this._canvasRef}
         ></canvas>
+        <div className="jpcad-sketcher-Sketcher-Statusbar">
+          X: {this.state.currentPointer?.x} - Y: {this.state.currentPointer?.y}
+        </div>
       </div>
     );
   }
@@ -285,7 +307,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     drag: false
   };
   private _gridLimit = 128;
-  private _gridSize = 64; //grid size in pixels
+  private _gridSize = GRID_SIZE; //grid size in pixels
   private _scaleRate = 1.02;
   private _topLeft = { x: 0, y: 0 }; // top left position of canvas in world coords.
   private _divRef = React.createRef<HTMLDivElement>();
