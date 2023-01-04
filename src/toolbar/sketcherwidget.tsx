@@ -10,6 +10,10 @@ interface IState {
   mode?: 'POINT' | 'LINE';
 }
 
+interface IPosition {
+  x: number;
+  y: number;
+}
 class PanZoom {
   constructor(private ctx: CanvasRenderingContext2D) {
     this.x = 0;
@@ -25,14 +29,20 @@ class PanZoom {
     this.x = x - (x - this.x) * sc;
     this.y = y - (y - this.y) * sc;
   };
-  toWorld = (x: number, y: number, point: { x: number; y: number }) => {
+  toWorld = (screenCoor: IPosition): IPosition => {
     // converts from screen coords to world coords
-
+    const point = { x: 0, y: 0 };
     const inv = 1 / this.scale;
-    point.x = (x - this.x) * inv;
-    point.y = (y - this.y) * inv;
+    point.x = (screenCoor.x - this.x) * inv;
+    point.y = (screenCoor.y - this.y) * inv;
     return point;
   };
+  toScreen(worldPos: IPosition): IPosition {
+    const x = worldPos.x * this.scale + this.x;
+    const y = worldPos.y * this.scale + this.y;
+    return { x, y };
+  }
+
   x: number;
   y: number;
   scale: number;
@@ -72,6 +82,8 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     canvas.addEventListener('wheel', this.mouseEvents, { passive: false });
     const ctx = canvas.getContext('2d')!;
     this._panZoom = new PanZoom(ctx);
+    this._panZoom.x = canvas.width / 2;
+    this._panZoom.y = canvas.height / 2;
     requestAnimationFrame(this.update);
   }
 
@@ -103,7 +115,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current;
     const ctx = canvas.getContext('2d')!;
-    let scale, gridScale, size, x, y;
+    let scale: number, gridScale: number, size: number, x: number, y: number;
 
     const w = canvas.width;
     const h = canvas.height;
@@ -116,7 +128,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     } else {
       gridScale = gridScreenSize;
       size = Math.max(w, h) / panZoom.scale + gridScale * 2;
-      panZoom.toWorld(0, 0, this._topLeft);
+      this._topLeft = panZoom.toWorld({ x: 0, y: 0 });
       x = Math.floor(this._topLeft.x / gridScale) * gridScale;
       y = Math.floor(this._topLeft.y / gridScale) * gridScale;
       if (size / gridScale > this._gridLimit) {
@@ -124,7 +136,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       }
     }
     panZoom.apply();
-    ctx.lineWidth = 1;
+    ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#ccc';
     ctx.beginPath();
     for (let i = 0; i < size; i += gridScale) {
@@ -133,31 +145,56 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       ctx.moveTo(x, y + i);
       ctx.lineTo(x + size, y + i);
     }
-    ctx.setTransform(1, 0, 0, 1, 0, 0); 
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.stroke();
+    ctx.closePath();
+
+    this.drawCenter(size);
+  };
+  drawCenter = (size: number) => {
+    const panZoom = this._panZoom;
+    const canvas = this._canvasRef.current!;
+    const ctx = canvas.getContext('2d')!;
+    const center = panZoom.toScreen({ x: 0, y: 0 });
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#000';
+
+    ctx.beginPath();
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(center.x, center.y + size);
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(center.x, center.y - size);
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(center.x + size, center.y);
+    ctx.moveTo(center.x, center.y);
+    ctx.lineTo(center.x - size, center.y);
+    ctx.stroke();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.closePath();
   };
 
   drawPoint = (x: number, y: number) => {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
-    const worldCoord = panZoom.toWorld(x, y, { x: 0, y: 0 });
+    const worldCoord = panZoom.toWorld({ x, y });
     panZoom.apply();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#000';
     ctx.beginPath();
+    ctx.moveTo(worldCoord.x - (2 / panZoom.scale) * canvas.width, worldCoord.y);
+    ctx.lineTo(worldCoord.x + (2 / panZoom.scale) * canvas.width, worldCoord.y);
     ctx.moveTo(
-      worldCoord.x - (2 / panZoom.scale) * canvas.width,
-      worldCoord.y
+      worldCoord.x,
+      worldCoord.y - (2 / panZoom.scale) * canvas.height
     );
     ctx.lineTo(
-      worldCoord.x + (2 / panZoom.scale) * canvas.width,
-      worldCoord.y
+      worldCoord.x,
+      worldCoord.y + (2 / panZoom.scale) * canvas.height
     );
-    ctx.moveTo(worldCoord.x, worldCoord.y - (2 / panZoom.scale) * canvas.height);
-    ctx.lineTo(worldCoord.x, worldCoord.y + (2 / panZoom.scale) * canvas.height);
     ctx.setTransform(1, 0, 0, 1, 0, 0); //reset the transform so the lineWidth is 1
     ctx.stroke();
+    ctx.closePath();
   };
   update = () => {
     const canvas = this._canvasRef.current!;
@@ -202,6 +239,7 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       mouse.drag = false;
     }
     this.drawGrid(this._gridSize, false);
+
     this.drawPoint(mouse.x, mouse.y);
     requestAnimationFrame(this.update);
   };
