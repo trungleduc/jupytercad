@@ -362,7 +362,3 @@ div.jpcad-toolbar-widget > div.jp-Toolbar-item:last-child {
   width: 100%;
   height: 29px;
 }
-
-.jpcad-sketcher-Sketcher-Canvas{
-  cursor:crosshair;
-}

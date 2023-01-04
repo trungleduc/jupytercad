@@ -10,13 +10,38 @@ interface IState {
   mode?: 'POINT' | 'LINE';
 }
 
-const GRID_SIZE = 50;
+class PanZoom {
+  constructor(private ctx: CanvasRenderingContext2D) {
+    this.x = 0;
+    this.y = 0;
+    this.scale = 1;
+  }
+  apply = () => {
+    this.ctx.setTransform(this.scale, 0, 0, this.scale, this.x, this.y);
+  };
+  scaleAt = (x, y, sc) => {
+    // x & y are screen coords, not world
+    this.scale *= sc;
+    this.x = x - (x - this.x) * sc;
+    this.y = y - (y - this.y) * sc;
+  };
+  toWorld = (x: number, y: number, point: { x: number; y: number }) => {
+    // converts from screen coords to world coords
+
+    const inv = 1 / this.scale;
+    point.x = (x - this.x) * inv;
+    point.y = (y - this.y) * inv;
+    return point;
+  };
+  x: number;
+  y: number;
+  scale: number;
+}
 
 class SketcherReactWidget extends React.Component<IProps, IState> {
   constructor(props) {
     super(props);
     this.state = {};
-    console.log(this._actPoint);
   }
 
   componentDidMount(): void {
@@ -30,175 +55,156 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
     if (!currentDiv) {
       return;
     }
-
+    const canvas = this._canvasRef.current;
+    if (!canvas) {
+      return;
+    }
     const rect = currentDiv.getBoundingClientRect();
-    const canvas = this._canvasRef.current!;
 
     if (rect?.width && rect?.height) {
       canvas.height = rect.height - 30; // Remove the height of the toolbar
       canvas.width = rect.width;
     }
-    const width = canvas.width;
-    const height = canvas.height;
-    const context = canvas.getContext('2d')!;
 
-    // const gridSizeOverTwo = gridSize / 2;
-    const centerX = canvas.width / 2;
-    const centerY = canvas.height / 2;
-    this._canvasState = { width, height, centerX, centerY };
-    context.lineWidth = 0.5;
-    context.strokeStyle = this._lightTheme ? '#BBB' : '#999';
-
-    for (let x = centerX + GRID_SIZE; x <= width; x += GRID_SIZE) {
-      context.moveTo(x, 0);
-      context.lineTo(x, height);
-    }
-
-    for (let x = centerX - GRID_SIZE; x >= 0; x -= GRID_SIZE) {
-      context.moveTo(x, 0);
-      context.lineTo(x, height);
-    }
-
-    for (let y = centerY + GRID_SIZE; y <= height; y += GRID_SIZE) {
-      context.moveTo(0, y);
-      context.lineTo(width, y);
-    }
-
-    for (let y = centerY - GRID_SIZE; y >= 0; y -= GRID_SIZE) {
-      context.moveTo(0, y);
-      context.lineTo(width, y);
-    }
-
-    context.stroke();
-
-    context.beginPath();
-
-    context.lineWidth = 2;
-    context.strokeStyle = this._lightTheme ? '#999' : '#BBB';
-
-    context.moveTo(centerX, 0);
-    context.lineTo(centerX, height);
-
-    context.moveTo(0, centerY);
-    context.lineTo(width, centerY);
-
-    context.stroke();
-
-    canvas.addEventListener('mousedown', this.mouseDownListener);
-    canvas.addEventListener('mousemove', this.mouseMoveListener);
-    canvas.addEventListener('mouseover', this.mouseOverListener, false);
+    ['mousedown', 'mouseup', 'mousemove'].forEach(ev =>
+      canvas.addEventListener(ev as any, this.mouseEvents)
+    );
+    canvas.addEventListener('wheel', this.mouseEvents, { passive: false });
+    const ctx = canvas.getContext('2d')!;
+    this._panZoom = new PanZoom(ctx);
+    requestAnimationFrame(this.update);
   }
 
-  updateMousePos = evt => {
-    const canvas = this._canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const X = (evt.clientX - rect.left - this._canvasState.centerX) / GRID_SIZE;
-    const Y = (evt.clientY - rect.top - this._canvasState.centerY) / GRID_SIZE;
-    this._mousePosition = { X, Y };
-    // console.log(this._mousePosition);
-  };
+  mouseEvents = (e: MouseEvent) => {
+    if (!this._canvasRef.current) {
+      return;
+    }
 
-  mouseDownListener = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    // const clickPosX = this._mousePosition.X;
-    // const clickPosY = this._mousePosition.Y;
-  };
-  mouseMoveListener = (e: MouseEvent) => {
-    this.updateMousePos(e);
-    if(this._actPoint){
-      this._actPoint.translate(this._mousePosition.X, this._mousePosition.Y)
+    const bounds = this._canvasRef.current.getBoundingClientRect();
+    this._mouse.x = e.pageX - bounds.left - scrollX;
+    this._mouse.y = e.pageY - bounds.top - scrollY;
+
+    this._mouse.button =
+      e.type === 'mousedown'
+        ? true
+        : e.type === 'mouseup'
+        ? false
+        : this._mouse.button;
+    if (e.type === 'wheel') {
+      this._mouse.wheel += -(e as WheelEvent).deltaY;
+      e.preventDefault();
     }
   };
 
-  mouseOverListener = evt => {
-    this.addPoint();
-    this.draw();
-  };
-
-  addPoint = () => {
-    if(this._mousePosition){
-      const point = {
-        x: this._mousePosition.X,
-        y: this._mousePosition.Y,
-        control: [],
-        over: false,
-        selected: false,
-        translate: (x, y) => {
-          point.x = x;
-          point.y = y;
-        }
-      };
-      this._points.push(point);
-      this._actPoint = point;
-
+  drawGrid = (gridScreenSize = 128, adaptive = true) => {
+    if (!this._canvasRef.current) {
+      return;
     }
-  };
+    const panZoom = this._panZoom;
+    const canvas = this._canvasRef.current;
+    const ctx = canvas.getContext('2d')!;
+    let scale, gridScale, size, x, y;
 
-  draw = () => {
-    this.drawLines();
-  };
-
-  drawLines = () => {
-    for (let p = 1; p < this._points.length; p++) {
-      this.drawLine(p - 1, p);
-    }
-  };
-
-  drawLine = (p1, p2) => {
-    const canvas = this._canvasRef.current!;
-    const context = canvas.getContext('2d')!;
-    //Start new path for every line
-    context.beginPath();
-
-    //Set line width and color
-    context.lineWidth = 1;
-    context.strokeStyle = 'blue';
-
-    const startPointX =
-      this._points[p1].x * GRID_SIZE + this._canvasState.centerX;
-    const startPointY =
-      this._points[p1].y * GRID_SIZE + this._canvasState.centerY;
-
-    const endPointX =
-      this._points[p2].x * GRID_SIZE + this._canvasState.centerX;
-    const endPointY =
-      this._points[p2].y * GRID_SIZE + this._canvasState.centerY;
-    let controlPointX_1, controlPointY_1, controlPointX_2, controlPointY_2;
-    if (this._points[p1].control.length != 0) {
-      controlPointX_1 =
-        this._points[p1].control[0].x * GRID_SIZE + this._canvasState.centerX;
-      controlPointY_1 =
-        this._points[p1].control[0].y * GRID_SIZE + this._canvasState.centerY;
+    const w = canvas.width;
+    const h = canvas.height;
+    if (adaptive) {
+      scale = 1 / panZoom.scale;
+      gridScale = 2 ** (Math.log2(gridScreenSize * scale) | 0);
+      size = Math.max(w, h) * scale + gridScale * 2;
+      x = (((-panZoom.x * scale - gridScale) / gridScale) | 0) * gridScale;
+      y = (((-panZoom.y * scale - gridScale) / gridScale) | 0) * gridScale;
     } else {
-      controlPointX_1 = startPointX;
-      controlPointY_1 = startPointY;
+      gridScale = gridScreenSize;
+      size = Math.max(w, h) / panZoom.scale + gridScale * 2;
+      panZoom.toWorld(0, 0, this._topLeft);
+      x = Math.floor(this._topLeft.x / gridScale) * gridScale;
+      y = Math.floor(this._topLeft.y / gridScale) * gridScale;
+      if (size / gridScale > this._gridLimit) {
+        size = gridScale * this._gridLimit;
+      }
     }
-
-    if (this._points[p2].control.length != 0) {
-      controlPointX_2 =
-        this._points[p2].control[1].x * GRID_SIZE + this._canvasState.centerX;
-      controlPointY_2 =
-        this._points[p2].control[1].y * GRID_SIZE + this._canvasState.centerY;
-    } else {
-      controlPointX_2 = endPointX;
-      controlPointY_2 = endPointY;
+    panZoom.apply();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#ccc';
+    ctx.beginPath();
+    for (let i = 0; i < size; i += gridScale) {
+      ctx.moveTo(x + i, y);
+      ctx.lineTo(x + i, y + size);
+      ctx.moveTo(x, y + i);
+      ctx.lineTo(x + size, y + i);
     }
+    ctx.setTransform(1, 0, 0, 1, 0, 0); 
+    ctx.stroke();
+  };
 
-    context.moveTo(startPointX, startPointY);
-    context.bezierCurveTo(
-      controlPointX_1,
-      controlPointY_1,
-      controlPointX_2,
-      controlPointY_2,
-      endPointX,
-      endPointY
+  drawPoint = (x: number, y: number) => {
+    const panZoom = this._panZoom;
+    const canvas = this._canvasRef.current!;
+    const ctx = canvas.getContext('2d')!;
+    const worldCoord = panZoom.toWorld(x, y, { x: 0, y: 0 });
+    panZoom.apply();
+    ctx.lineWidth = 0.5;
+    ctx.strokeStyle = '#000';
+    ctx.beginPath();
+    ctx.moveTo(
+      worldCoord.x - (2 / panZoom.scale) * canvas.width,
+      worldCoord.y
     );
-
-    //Draw it!
-    context.stroke();
+    ctx.lineTo(
+      worldCoord.x + (2 / panZoom.scale) * canvas.width,
+      worldCoord.y
+    );
+    ctx.moveTo(worldCoord.x, worldCoord.y - (2 / panZoom.scale) * canvas.height);
+    ctx.lineTo(worldCoord.x, worldCoord.y + (2 / panZoom.scale) * canvas.height);
+    ctx.setTransform(1, 0, 0, 1, 0, 0); //reset the transform so the lineWidth is 1
+    ctx.stroke();
   };
+  update = () => {
+    const canvas = this._canvasRef.current!;
+    const currentDiv = this._divRef.current!;
 
+    const ctx = canvas.getContext('2d')!;
+    const mouse = this._mouse;
+    const panZoom = this._panZoom;
+
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset transform
+    ctx.globalAlpha = 1; // reset alpha
+
+    const rect = currentDiv.getBoundingClientRect();
+
+    if (canvas.width !== rect.width || canvas.height !== rect.height - 30) {
+      canvas.height = rect.height - 30; // Remove the height of the toolbar
+      canvas.width = rect.width;
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    if (mouse.wheel !== 0) {
+      let scale = 1;
+      scale = mouse.wheel < 0 ? 1 / this._scaleRate : this._scaleRate;
+      mouse.wheel *= 0.8;
+      if (Math.abs(mouse.wheel) < 1) {
+        mouse.wheel = 0;
+      }
+      panZoom.scaleAt(mouse.x, mouse.y, scale); //scale is the change in scale
+    }
+    if (mouse.button) {
+      if (!mouse.drag) {
+        mouse.lastX = mouse.x;
+        mouse.lastY = mouse.y;
+        mouse.drag = true;
+      } else {
+        panZoom.x += mouse.x - mouse.lastX;
+        panZoom.y += mouse.y - mouse.lastY;
+        mouse.lastX = mouse.x;
+        mouse.lastY = mouse.y;
+      }
+    } else if (mouse.drag) {
+      mouse.drag = false;
+    }
+    this.drawGrid(this._gridSize, false);
+    this.drawPoint(mouse.x, mouse.y);
+    requestAnimationFrame(this.update);
+  };
   render(): React.ReactNode {
     return (
       <div
@@ -231,19 +237,24 @@ class SketcherReactWidget extends React.Component<IProps, IState> {
       </div>
     );
   }
-  private _mousePosition: { X: number; Y: number };
-  private _points: any[] = [];
-  private _actPoint: any;
-  private _canvasState: {
-    width: number;
-    height: number;
-    centerX: number;
-    centerY: number;
+  private _mouse = {
+    x: 0,
+    y: 0,
+    button: false,
+    wheel: 0,
+    lastX: 0,
+    lastY: 0,
+    drag: false
   };
+  private _gridLimit = 128;
+  private _gridSize = 64; //grid size in pixels
+  private _scaleRate = 1.02;
+  private _topLeft = { x: 0, y: 0 }; // top left position of canvas in world coords.
   private _divRef = React.createRef<HTMLDivElement>();
   private _canvasRef = React.createRef<HTMLCanvasElement>();
-  private _lightTheme =
-    document.body.getAttribute('data-jp-theme-light') === 'true';
+  private _panZoom: PanZoom;
+  // private _lightTheme =
+  //   document.body.getAttribute('data-jp-theme-light') === 'true';
 }
 
 export interface ISketcherDialogOptions {
