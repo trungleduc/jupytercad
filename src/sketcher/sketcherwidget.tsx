@@ -1,6 +1,6 @@
 import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
-import { drawPoint } from './helper';
+import { drawLine, drawPoint } from './helper';
 import { PanZoom } from './panzoom';
 import { IPosition, SketcherModel } from './sketchermodel';
 
@@ -12,13 +12,11 @@ interface IState {
   currentPointer?: IPosition;
 }
 
-
-
 export class SketcherReactWidget extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
     this.state = {};
-    this._gridSize = props.model.gridSize
+    this._gridSize = props.model.gridSize;
   }
 
   componentDidMount(): void {
@@ -52,12 +50,14 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
 
     ['mousedown', 'mouseup', 'mousemove'].forEach(ev =>
-      canvas.addEventListener(ev as any, this.mouseEvents)
+      canvas.addEventListener(ev as any, this.mousePanAnZoom)
     );
+    canvas.addEventListener('wheel', this.mousePanAnZoom, { passive: false });
 
     canvas.addEventListener('mousedown', this.handleRightClick);
-    canvas.addEventListener('click', this.handleClick);
-    canvas.addEventListener('wheel', this.mouseEvents, { passive: false });
+    canvas.addEventListener('click', this.handleLeftClick);
+    canvas.addEventListener('mousemove', this.handleMouseMove);
+
     const ctx = canvas.getContext('2d')!;
     this._panZoom = new PanZoom(ctx, this._gridSize);
     this._panZoom.x = canvas.width / 2;
@@ -65,22 +65,54 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     requestAnimationFrame(this.update);
   }
 
+  handleMouseMove = (e: MouseEvent) => {
+    const model = this.props.model;
+    const localPos = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
+    const worldPos = this.screenToWorldPos(localPos);
+    switch (this.state.mode) {
+      case 'LINE': {
+        if (model.editing.type === 'LINE') {
+          const startPointId = model.editing.content!['startPoint'];
+          const tempLineId = model.editing.content!['tempLine'];
+
+          const startPoint = model.getPointById(startPointId);
+          // const endPoint = model.getPointById(endPointId);
+          if (startPoint) {
+            if (tempLineId) {
+              model.removeLine(tempLineId);
+            }
+            const newTempLine = model.addLine(startPoint.position, worldPos);
+            model.updateEditiing('LINE', {
+              ...model.editing.content,
+              tempLine: newTempLine
+            });
+          }
+        }
+        break;
+      }
+      case 'POINT': {
+        break;
+      }
+      default:
+        break;
+    }
+  };
   handleRightClick = (e: MouseEvent) => {
     if (e.button !== 2) {
       return;
     }
-    const model = this.props.model
+    const model = this.props.model;
     const localPos = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
-    const worldPos = this._panZoom.toWorld(localPos, true)
+    const worldPos = this.screenToWorldPos(localPos);
     const pointId = model.getPointByPosition(worldPos);
-    if(pointId){
-      model.removePoint(pointId)
+    if (pointId) {
+      const selectedLines = model.getLineByControlPoint(pointId);
+      selectedLines.forEach(id => model.removeLine(id));
+      model.removePoint(pointId);
     }
-
-    
   };
 
-  handleClick = (e: MouseEvent) => {
+  handleLeftClick = (e: MouseEvent) => {
     if (!this._canvasRef.current) {
       return;
     }
@@ -90,9 +122,24 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
     const { model } = this.props;
     const mousePosition = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
-    const worldPos = this._panZoom.toWorld(mousePosition, true);
+    const worldPos = this.screenToWorldPos(mousePosition);
     switch (this.state.mode) {
       case 'LINE': {
+        if (model.editing.type === 'LINE') {
+          model.addPoint(worldPos, { color: '#ffffff00' });
+          const lineId = model.editing.content!['tempLine'];
+          const line = model.getLineById(lineId)!;
+          const midpoint = {
+            x: (line.start.x + line.end.x) / 2,
+            y: (line.start.y + line.end.y) / 2
+          };
+          const mid = model.addPoint(midpoint, { color: 'red' });
+          line.controlPoints = [mid];
+          model.stopEdit();
+        } else {
+          const startPoint = model.addPoint(worldPos, { color: '#ffffff00' });
+          model.startEdit('LINE', { startPoint });
+        }
         break;
       }
       case 'POINT': {
@@ -104,7 +151,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
   };
 
-  mouseEvents = (e: MouseEvent) => {
+  mousePanAnZoom = (e: MouseEvent) => {
     if (!this._canvasRef.current) {
       return;
     }
@@ -123,7 +170,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
       this._mouse.wheel += -(e as WheelEvent).deltaY;
       e.preventDefault();
     }
-    const currentPos = this.currentPointer();
+    const currentPos = this.screenToWorldPos(this._mouse);
     if (currentPos) {
       this.setState(old => ({
         ...old,
@@ -170,6 +217,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
 
     this.drawCenter(size);
   };
+
   drawCenter = (size: number) => {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
@@ -196,8 +244,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
-    const worldCoord = panZoom.toWorld({ x, y }, true);
-
+    const worldCoord = this.screenToWorldPos({ x, y });
     panZoom.apply();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#000';
@@ -225,9 +272,17 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     if (!ctx) {
       return;
     }
-    this.props.model.points.forEach((val, key) => {
-      const newScreenPos = this._panZoom.toScreen(val);
-      drawPoint(ctx, newScreenPos);
+    const { model } = this.props;
+    const panZoom = this._panZoom;
+    model.points.forEach((val, key) => {
+      const newScreenPos = panZoom.toScreen(val.position);
+      const color = val.option?.color;
+      drawPoint(ctx, newScreenPos, color);
+    });
+    model.lines.forEach(val => {
+      const screenStart = panZoom.toScreen(val.start);
+      const screenEnd = panZoom.toScreen(val.end);
+      drawLine(ctx, screenStart, screenEnd, 'red', 1);
     });
   };
 
@@ -285,10 +340,16 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     const y = global.y - bounds.top - scrollY;
     return { x, y };
   };
+  screenToWorldPos = (screen: IPosition): IPosition => {
+    let worldPos = this._panZoom!.toWorld(screen, true);
+    const nearPoint = this.props.model.getPointByPosition(worldPos);
+    if (nearPoint) {
+      const p = this.props.model.getPointById(nearPoint)!;
+      worldPos = p.position;
+    }
+    return worldPos;
+  };
 
-  currentPointer(): IPosition | undefined {
-    return this._panZoom?.toWorld(this._mouse, true);
-  }
   render(): React.ReactNode {
     return (
       <div
