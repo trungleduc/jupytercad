@@ -364,7 +364,7 @@ div.jpcad-toolbar-widget > div.jp-Toolbar-item:last-child {
 }
 
 .jpcad-sketcher-Sketcher-Statusbar {
-  height:20px;
+  height: 20px;
   position: absolute;
   bottom: 0;
   right: 5px;
@@ -372,5 +372,5 @@ div.jpcad-toolbar-widget > div.jp-Toolbar-item:last-child {
 }
 
 .highlight {
-  background-color: var(--jp-layout-color2)!important;
+  background-color: var(--jp-layout-color2) !important;
 }
