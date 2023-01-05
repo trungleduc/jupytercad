@@ -11,20 +11,10 @@ export interface ISketcherDialogOptions {
   
   export class SketcherDialog extends Dialog<IDict> {
     constructor(options: ISketcherDialogOptions) {
-        const model = new SketcherModel()
+        const model = new SketcherModel({gridSize: 64})
       const body = <SketcherReactWidget model={model} />;
       super({ title: 'Sketcher', body, buttons: [] });
       this.addClass('jpcad-sketcher-SketcherDialog');
-      // console.log('this.node.firstChild', this.node.firstChild);
-  
-      // const observer = new MutationObserver((e) => {
-      //   console.log('mutations:', e);
-      // });
-      // observer.observe( this.node.firstChild!, {attributes:true});
-      // this.node.firstChild!.addEventListener('resize', ()=>{
-      //   console.log('eee');
-  
-      // })
     }
   }
   

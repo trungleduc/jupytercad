@@ -371,3 +371,6 @@ div.jpcad-toolbar-widget > div.jp-Toolbar-item:last-child {
   font-size: var(--jp-ui-font-size0);
 }
 
+.highlight {
+  background-color: var(--jp-layout-color2)!important;
+}

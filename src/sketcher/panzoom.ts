@@ -1,23 +1,22 @@
 import { nearest } from '../tools';
 import { IPosition } from './sketchermodel';
 
-
 export class PanZoom {
   constructor(private ctx: CanvasRenderingContext2D, private gridSize: number) {
     this.x = 0;
     this.y = 0;
     this.scale = 1;
   }
-  apply = () => {
+  apply() {
     this.ctx.setTransform(this.scale, 0, 0, this.scale, this.x, this.y);
-  };
-  scaleAt = (x, y, sc) => {
+  }
+  scaleAt(x, y, sc) {
     // x & y are screen coords, not world
     this.scale *= sc;
     this.x = x - (x - this.x) * sc;
     this.y = y - (y - this.y) * sc;
-  };
-  toWorld = (screenCoor: IPosition, snap = false, tol = 0.1): IPosition => {
+  }
+  toWorld(screenCoor: IPosition, snap = false, tol = 0.1): IPosition {
     // converts from screen coords to world coords
     const inv = 1 / this.scale;
     let x = (screenCoor.x - this.x) * inv;
@@ -27,7 +26,7 @@ export class PanZoom {
       y = nearest(y / this.gridSize, tol) * this.gridSize;
     }
     return { x, y };
-  };
+  }
   toScreen(worldPos: IPosition): IPosition {
     const x = worldPos.x * this.scale + this.x;
     const y = worldPos.y * this.scale + this.y;

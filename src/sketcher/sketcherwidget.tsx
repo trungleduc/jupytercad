@@ -1,31 +1,38 @@
-
 import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
 import { drawPoint } from './helper';
-
 import { PanZoom } from './panzoom';
 import { IPosition, SketcherModel } from './sketchermodel';
 
 interface IProps {
-  model: SketcherModel
+  model: SketcherModel;
 }
 interface IState {
   mode?: 'POINT' | 'LINE';
   currentPointer?: IPosition;
 }
 
-const GRID_SIZE = 64;
+
 
 export class SketcherReactWidget extends React.Component<IProps, IState> {
-  constructor(props) {
+  constructor(props: IProps) {
     super(props);
     this.state = {};
+    this._gridSize = props.model.gridSize
   }
 
   componentDidMount(): void {
     setTimeout(() => {
       this.initiateEditor();
     }, 100);
+  }
+
+  get ctx(): CanvasRenderingContext2D | null {
+    const canvas = this._canvasRef.current;
+    if (!canvas) {
+      return null;
+    }
+    return canvas.getContext('2d');
   }
 
   initiateEditor(): void {
@@ -47,6 +54,9 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ['mousedown', 'mouseup', 'mousemove'].forEach(ev =>
       canvas.addEventListener(ev as any, this.mouseEvents)
     );
+
+    canvas.addEventListener('mousedown', this.handleRightClick);
+    canvas.addEventListener('click', this.handleClick);
     canvas.addEventListener('wheel', this.mouseEvents, { passive: false });
     const ctx = canvas.getContext('2d')!;
     this._panZoom = new PanZoom(ctx, this._gridSize);
@@ -55,17 +65,56 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     requestAnimationFrame(this.update);
   }
 
+  handleRightClick = (e: MouseEvent) => {
+    if (e.button !== 2) {
+      return;
+    }
+    const model = this.props.model
+    const localPos = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
+    const worldPos = this._panZoom.toWorld(localPos, true)
+    const pointId = model.getPointByPosition(worldPos);
+    if(pointId){
+      model.removePoint(pointId)
+    }
+
+    
+  };
+
+  handleClick = (e: MouseEvent) => {
+    if (!this._canvasRef.current) {
+      return;
+    }
+    const ctx = this.ctx;
+    if (!ctx) {
+      return;
+    }
+    const { model } = this.props;
+    const mousePosition = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
+    const worldPos = this._panZoom.toWorld(mousePosition, true);
+    switch (this.state.mode) {
+      case 'LINE': {
+        break;
+      }
+      case 'POINT': {
+        model.addPoint(worldPos);
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
   mouseEvents = (e: MouseEvent) => {
     if (!this._canvasRef.current) {
       return;
     }
 
-    const bounds = this._canvasRef.current.getBoundingClientRect();
-    this._mouse.x = e.pageX - bounds.left - scrollX;
-    this._mouse.y = e.pageY - bounds.top - scrollY;
+    const localPos = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
+    this._mouse.x = localPos.x;
+    this._mouse.y = localPos.y;
 
     this._mouse.button =
-      e.type === 'mousedown'
+      e.type === 'mousedown' && e.button === 2
         ? true
         : e.type === 'mouseup'
         ? false
@@ -168,14 +217,19 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.closePath();
 
     const newScreenPos = panZoom.toScreen(worldCoord);
-    drawPoint(ctx, newScreenPos, 'crimson')
+    drawPoint(ctx, newScreenPos, 'crimson');
   };
 
   draw = () => {
-    this.props.model.points.forEach((val, key) =>{
-
-    })
-  }
+    const ctx = this.ctx;
+    if (!ctx) {
+      return;
+    }
+    this.props.model.points.forEach((val, key) => {
+      const newScreenPos = this._panZoom.toScreen(val);
+      drawPoint(ctx, newScreenPos);
+    });
+  };
 
   update = () => {
     const canvas = this._canvasRef.current!;
@@ -221,8 +275,17 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
     this.drawGrid(this._gridSize);
     this.drawPointer(mouse.x, mouse.y);
+    this.draw();
     requestAnimationFrame(this.update);
   };
+
+  globalToLocalPos = (global: IPosition): IPosition => {
+    const bounds = this._canvasRef.current!.getBoundingClientRect();
+    const x = global.x - bounds.left - scrollX;
+    const y = global.y - bounds.top - scrollY;
+    return { x, y };
+  };
+
   currentPointer(): IPosition | undefined {
     return this._panZoom?.toWorld(this._mouse, true);
   }
@@ -235,18 +298,32 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
       >
         <div className=" lm-Widget jp-Toolbar jpcad-sketcher-Sketcher-Toolbar">
           <Button
-            className={'jp-Button jp-mod-minimal jp-ToolbarButtonComponent'}
+            className={`jp-Button jp-mod-minimal jp-ToolbarButtonComponent jp-mod-styled ${
+              this.state.mode === 'POINT' ? 'highlight' : ''
+            }`}
             style={{ color: 'const(--jp-ui-font-color1)' }}
             onClick={async () => {
-              console.log('clicked');
+              if (this.state.mode !== 'POINT') {
+                this.setState(old => ({ ...old, mode: 'POINT' }));
+              } else {
+                this.setState(old => ({ ...old, mode: undefined }));
+              }
             }}
           >
             POINT
           </Button>
           <Button
-            className={'jp-Button jp-mod-minimal jp-ToolbarButtonComponent'}
+            className={`jp-Button jp-mod-minimal jp-ToolbarButtonComponent jp-mod-styled ${
+              this.state.mode === 'LINE' ? 'highlight' : ''
+            }`}
             style={{ color: 'const(--jp-ui-font-color1)' }}
-            onClick={async () => {}}
+            onClick={async () => {
+              if (this.state.mode !== 'LINE') {
+                this.setState(old => ({ ...old, mode: 'LINE' }));
+              } else {
+                this.setState(old => ({ ...old, mode: undefined }));
+              }
+            }}
           >
             LINE
           </Button>
@@ -271,7 +348,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     drag: false
   };
   private _gridLimit = 128;
-  private _gridSize = GRID_SIZE; //grid size in pixels
+  private _gridSize: number; //grid size in pixels
   private _scaleRate = 1.02;
   private _topLeft = { x: 0, y: 0 }; // top left position of canvas in world coords.
   private _divRef = React.createRef<HTMLDivElement>();
@@ -280,4 +357,3 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
   // private _lightTheme =
   //   document.body.getAttribute('data-jp-theme-light') === 'true';
 }
-

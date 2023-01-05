@@ -71,8 +71,6 @@
     "@lumino/widgets": "~2.0.0-alpha.6",
     "@naisutech/react-tree": "^3.0.1",
     "@rjsf/core": "^4.2.0",
-    "@types/d3-color": "^3.1.0",
-    "@types/three": "^0.134.0",
     "d3-color": "^3.1.0",
     "jupytercad-opencascade": "^0.1.0",
     "styled-components": "^5.3.6",
@@ -87,7 +85,9 @@
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^9.0.9",
     "@jupyterlab/builder": "~4.0.0-alpha.17",
+    "@types/d3-color": "^3.1.0",
     "@types/node": "^16.11.10",
+    "@types/three": "^0.134.0",
     "@typescript-eslint/eslint-plugin": "^4.8.1",
     "@typescript-eslint/parser": "^4.8.1",
     "copy-webpack-plugin": "^10.0.0",
