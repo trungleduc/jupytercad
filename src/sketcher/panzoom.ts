@@ -1,5 +1,5 @@
 import { nearest } from '../tools';
-import { IPosition } from './sketchermodel';
+import { IPosition } from './types';
 
 export class PanZoom {
   constructor(private ctx: CanvasRenderingContext2D, private gridSize: number) {
@@ -7,10 +7,10 @@ export class PanZoom {
     this.y = 0;
     this.scale = 1;
   }
-  apply() {
+  apply(): void {
     this.ctx.setTransform(this.scale, 0, 0, this.scale, this.x, this.y);
   }
-  scaleAt(x, y, sc) {
+  scaleAt(x: number, y: number, sc: number) {
     // x & y are screen coords, not world
     this.scale *= sc;
     this.x = x - (x - this.x) * sc;

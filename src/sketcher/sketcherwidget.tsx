@@ -1,14 +1,19 @@
-import { Button } from '@jupyterlab/ui-components';
 import * as React from 'react';
-import { drawLine, drawPoint } from './helper';
+import {
+  distance,
+  drawCircle,
+  drawLine,
+  drawPoint,
+  ToolbarSwitch
+} from './helper';
 import { PanZoom } from './panzoom';
-import { IPosition, SketcherModel } from './sketchermodel';
+import { IOperator, IPosition, ISketcherModel } from './types';
 
 interface IProps {
-  model: SketcherModel;
+  model: ISketcherModel;
 }
 interface IState {
-  mode?: 'POINT' | 'LINE';
+  mode?: IOperator;
   currentPointer?: IPosition;
 }
 
@@ -65,7 +70,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     requestAnimationFrame(this.update);
   }
 
-  handleMouseMove = (e: MouseEvent) => {
+  handleMouseMove = (e: MouseEvent): void => {
     const model = this.props.model;
     const localPos = this.globalToLocalPos({ x: e.pageX, y: e.pageY });
     const worldPos = this.screenToWorldPos(localPos);
@@ -90,6 +95,28 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
         }
         break;
       }
+      case 'CIRCLE': {
+        if (model.editing.type === 'CIRCLE') {
+          const centerId = model.editing.content!['centerId'];
+          const tempCircleId = model.editing.content!['tempCircle'];
+
+          const centerPoint = model.getPointById(centerId);
+
+          // const endPoint = model.getPointById(endPointId);
+          if (centerPoint) {
+            if (tempCircleId) {
+              model.removeCircle(tempCircleId);
+            }
+            const radius = distance(worldPos, centerPoint.position);
+            const newTempCircle = model.addCircle(centerPoint.position, radius);
+            model.updateEditiing('CIRCLE', {
+              ...model.editing.content,
+              tempCircle: newTempCircle
+            });
+          }
+        }
+        break;
+      }
       case 'POINT': {
         break;
       }
@@ -97,7 +124,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
         break;
     }
   };
-  handleRightClick = (e: MouseEvent) => {
+  handleRightClick = (e: MouseEvent): void => {
     if (e.button !== 2) {
       return;
     }
@@ -108,11 +135,19 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     if (pointId) {
       const selectedLines = model.getLineByControlPoint(pointId);
       selectedLines.forEach(id => model.removeLine(id));
+
+      const selectedCircle = model.getCircleByControlPoint(pointId);
+      selectedCircle.forEach(id => {
+        const circle = model.getCircleById(id);
+        circle?.controlPoints?.forEach(p => model.removePoint(p));
+        model.removeCircle(id);
+      });
+
       model.removePoint(pointId);
     }
   };
 
-  handleLeftClick = (e: MouseEvent) => {
+  handleLeftClick = (e: MouseEvent): void => {
     if (!this._canvasRef.current) {
       return;
     }
@@ -142,6 +177,22 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
         }
         break;
       }
+      case 'CIRCLE': {
+        if (model.editing.type === 'CIRCLE') {
+          const centerId = model.editing.content!['centerId'];
+          const circleId = model.editing.content!['tempCircle'];
+          const circle = model.getCircleById(circleId)!;
+
+          const control = model.addPoint(worldPos, { color: 'red' });
+          circle.controlPoints = [control, centerId];
+          model.stopEdit();
+        } else {
+          const centerId = model.addPoint(worldPos, { color: 'red' });
+
+          model.startEdit('CIRCLE', { centerId, radius: 0 });
+        }
+        break;
+      }
       case 'POINT': {
         model.addPoint(worldPos);
         break;
@@ -151,7 +202,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
   };
 
-  mousePanAnZoom = (e: MouseEvent) => {
+  mousePanAnZoom = (e: MouseEvent): void => {
     if (!this._canvasRef.current) {
       return;
     }
@@ -182,7 +233,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
   };
 
-  drawGrid = (gridScreenSize = 128) => {
+  drawGrid = (gridScreenSize = 128): void => {
     if (!this._canvasRef.current) {
       return;
     }
@@ -218,7 +269,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     this.drawCenter(size);
   };
 
-  drawCenter = (size: number) => {
+  drawCenter = (size: number): void => {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
@@ -240,7 +291,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.closePath();
   };
 
-  drawPointer = (x: number, y: number) => {
+  drawPointer = (x: number, y: number): void => {
     const panZoom = this._panZoom;
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
@@ -267,7 +318,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     drawPoint(ctx, newScreenPos, 'crimson');
   };
 
-  draw = () => {
+  draw = (): void => {
     const ctx = this.ctx;
     if (!ctx) {
       return;
@@ -282,11 +333,20 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     model.lines.forEach(val => {
       const screenStart = panZoom.toScreen(val.start);
       const screenEnd = panZoom.toScreen(val.end);
-      drawLine(ctx, screenStart, screenEnd, 'red', 1);
+      drawLine(ctx, screenStart, screenEnd, 'blue', 1);
+    });
+
+    model.circles.forEach(val => {
+      const { center } = val;
+      const testRadius = { x: center.x + val.radius, y: center.y };
+      const screenCenter = panZoom.toScreen(center);
+      const screenTest = panZoom.toScreen(testRadius);
+      const radius = distance(screenCenter, screenTest);
+      drawCircle(ctx, screenCenter, radius, 'blue', 1);
     });
   };
 
-  update = () => {
+  update = (): void => {
     const canvas = this._canvasRef.current!;
     const currentDiv = this._divRef.current!;
 
@@ -349,7 +409,19 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
     return worldPos;
   };
+  toggleMode =
+    (mode: IOperator): (() => void) =>
+    () => {
+      if (this.state.mode !== mode) {
+        this.setState(old => ({ ...old, mode }));
+      } else {
+        this.setState(old => ({ ...old, mode: undefined }));
+      }
+    };
 
+  saveButtonOnClick = (): void => {
+    console.log('clicked');
+  };
   render(): React.ReactNode {
     return (
       <div
@@ -358,36 +430,27 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
         style={{ overflow: 'hidden', width: '100%', height: '100%' }}
       >
         <div className=" lm-Widget jp-Toolbar jpcad-sketcher-Sketcher-Toolbar">
-          <Button
-            className={`jp-Button jp-mod-minimal jp-ToolbarButtonComponent jp-mod-styled ${
-              this.state.mode === 'POINT' ? 'highlight' : ''
-            }`}
-            style={{ color: 'const(--jp-ui-font-color1)' }}
-            onClick={async () => {
-              if (this.state.mode !== 'POINT') {
-                this.setState(old => ({ ...old, mode: 'POINT' }));
-              } else {
-                this.setState(old => ({ ...old, mode: undefined }));
-              }
+          <div
+            style={{
+              boxShadow: '0 0 3px var(--jp-border-color0) inset',
+              display: 'flex'
             }}
           >
-            POINT
-          </Button>
-          <Button
-            className={`jp-Button jp-mod-minimal jp-ToolbarButtonComponent jp-mod-styled ${
-              this.state.mode === 'LINE' ? 'highlight' : ''
-            }`}
-            style={{ color: 'const(--jp-ui-font-color1)' }}
-            onClick={async () => {
-              if (this.state.mode !== 'LINE') {
-                this.setState(old => ({ ...old, mode: 'LINE' }));
-              } else {
-                this.setState(old => ({ ...old, mode: undefined }));
-              }
-            }}
-          >
-            LINE
-          </Button>
+            {['POINT', 'LINE', 'CIRCLE'].map(op => (
+              <ToolbarSwitch
+                key={op}
+                label={op}
+                toggled={this.state.mode === op}
+                onClick={this.toggleMode(op as IOperator)}
+              />
+            ))}
+          </div>
+
+          <ToolbarSwitch
+            label="Save"
+            toggled={false}
+            onClick={this.saveButtonOnClick}
+          />
         </div>
         <canvas
           className="jpcad-sketcher-Sketcher-Canvas"
