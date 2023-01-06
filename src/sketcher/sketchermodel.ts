@@ -1,28 +1,18 @@
 import { v4 as uuid } from 'uuid';
+
 import { IDict } from '../types';
+import { distance } from './helper';
+import {
+  ICircle,
+  ILine,
+  IOperator,
+  IPoint,
+  IPosition,
+  ISketcherModel
+} from './types';
 
-export interface IPosition {
-  x: number;
-  y: number;
-}
-export interface IPoint {
-  position: IPosition;
-  option?: { color: string };
-}
-
-export interface ILine {
-  start: IPosition;
-  end: IPosition;
-  controlPoints?: string[];
-}
-function distance(p1: IPosition, p2: IPosition): number {
-  return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
-}
-export type IOperator = 'LINE';
-export class SketcherModel {
+export class SketcherModel implements ISketcherModel {
   constructor(options: { gridSize: number }) {
-    this._points = new Map();
-    this._lines = new Map();
     this._gridSize = options.gridSize;
   }
 
@@ -34,6 +24,9 @@ export class SketcherModel {
   }
   get lines(): Map<string, ILine> {
     return this._lines;
+  }
+  get circles(): Map<string, ICircle> {
+    return this._circles;
   }
   get editing(): { type: IOperator | null; content: IDict | null } {
     return this._editing;
@@ -96,8 +89,30 @@ export class SketcherModel {
     return lines;
   }
 
-  private _points: Map<string, IPoint>;
-  private _lines: Map<string, ILine>;
+  addCircle(center: IPosition, radius: number): void {
+    const id = uuid();
+    this._circles.set(id, { center, radius });
+    return id;
+  }
+  removeCircle(id: string): void {
+    this._circles.delete(id);
+  }
+  getCircleById(id: string): ICircle | undefined {
+    return this._circles.get(id);
+  }
+  getCircleByControlPoint(id: string): string[] {
+    const circles: string[] = [];
+    for (const [key, val] of this._circles.entries()) {
+      if (val.controlPoints && val.controlPoints.includes(id)) {
+        circles.push(key);
+      }
+    }
+    return circles;
+  }
+
+  private _points: Map<string, IPoint> = new Map();
+  private _lines: Map<string, ILine> = new Map();
+  private _circles: Map<string, ICircle> = new Map([]);
   private _gridSize: number;
   private _editing: { type: IOperator | null; content: IDict | null } = {
     type: null,
