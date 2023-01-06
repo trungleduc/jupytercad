@@ -48,4 +48,5 @@ export interface ISketcherModel {
   removeCircle(id: string): void
   getCircleById(id: string): ICircle | undefined
   getCircleByControlPoint(id: string): string[]
+  save(): void
 }

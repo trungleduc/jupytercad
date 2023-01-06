@@ -16,7 +16,6 @@ except ImportError:
     logger.warn('[JupyterCad] Freecad is not installed!')
     fc = None
 
-
 class FCStd:
     def __init__(self) -> None:
         self._sources = ''
@@ -98,7 +97,10 @@ class FCStd:
                             jcad_prop_value, jcad_object=objects, fc_prop=getattr(fc_obj, prop), fc_object=fc_obj, fc_file=fc_file, 
                         )
                         if fc_value:
-                            setattr(fc_obj, prop, fc_value)
+                            try:
+                                setattr(fc_obj, prop, fc_value)
+                            except:
+                                pass
 
             fc_file.save()
             fc_file.recompute()

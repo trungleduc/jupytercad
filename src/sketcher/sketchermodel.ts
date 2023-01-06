@@ -1,6 +1,7 @@
 import { v4 as uuid } from 'uuid';
 
-import { IDict } from '../types';
+import { IDict, IJupyterCadDoc } from '../types';
+import { IJCadObject } from '../_interface/jcad';
 import { distance } from './helper';
 import {
   ICircle,
@@ -12,8 +13,9 @@ import {
 } from './types';
 
 export class SketcherModel implements ISketcherModel {
-  constructor(options: { gridSize: number }) {
+  constructor(options: { gridSize: number; sharedModel?: IJupyterCadDoc }) {
     this._gridSize = options.gridSize;
+    this._sharedModel = options.sharedModel;
   }
 
   get gridSize(): number {
@@ -109,7 +111,31 @@ export class SketcherModel implements ISketcherModel {
     }
     return circles;
   }
-
+  save(): void {
+    const newSketch: IJCadObject = {
+      shape: 'Sketcher::SketchObject',
+      name: 'NewSketch' + this._int,
+      visible: true,
+      parameters: {
+        Geometry: [
+          {
+            CenterX: 15.616811,
+            NormalZ: 1,
+            AngleXU: 0,
+            Radius: 15.294874,
+            TypeId: 'Part::GeomCircle',
+            CenterY: 25.640715,
+            CenterZ: 0,
+            NormalY: 0,
+            NormalX: 0
+          }
+        ]
+      }
+    };
+    this._int += 1;
+    this._sharedModel?.addObject(newSketch);
+  }
+  private _int = 0;
   private _points: Map<string, IPoint> = new Map();
   private _lines: Map<string, ILine> = new Map();
   private _circles: Map<string, ICircle> = new Map([]);
@@ -118,4 +144,5 @@ export class SketcherModel implements ISketcherModel {
     type: null,
     content: null
   };
+  private _sharedModel?: IJupyterCadDoc;
 }

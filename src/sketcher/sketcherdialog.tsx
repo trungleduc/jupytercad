@@ -11,7 +11,10 @@ export interface ISketcherDialogOptions {
 
 export class SketcherDialog extends Dialog<IDict> {
   constructor(options: ISketcherDialogOptions) {
-    const model = new SketcherModel({ gridSize: 64 });
+    const model = new SketcherModel({
+      gridSize: 64,
+      sharedModel: options.toolbarModel.sharedModel
+    });
     const body = <SketcherReactWidget model={model} />;
     super({ title: 'Sketcher', body, buttons: [] });
     this.addClass('jpcad-sketcher-SketcherDialog');
