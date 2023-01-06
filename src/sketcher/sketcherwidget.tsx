@@ -421,6 +421,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
 
   saveButtonOnClick = (): void => {
     console.log('clicked');
+    this.props.model.save()
   };
   render(): React.ReactNode {
     return (

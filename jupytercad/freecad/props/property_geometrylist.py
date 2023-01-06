@@ -20,6 +20,8 @@ class Part_PropertyGeometryList(BaseProp):
     def jcad_to_fc(prop_value: List, fc_prop: List=[], **kwargs) -> Any:
         # We do not handle the case of adding or removing yet.
         if len(prop_value) != len(fc_prop):
+            print('#########', prop_value, fc_prop)
+
             return None
 
         for idx, jcad_geo in enumerate(prop_value) :
