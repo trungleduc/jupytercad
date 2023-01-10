@@ -7,6 +7,7 @@ import { SketcherReactWidget } from './sketcherwidget';
 
 export interface ISketcherDialogOptions {
   toolbarModel: ToolbarModel;
+  closeCallback: { handler: () => void };
 }
 
 export class SketcherDialog extends Dialog<IDict> {
@@ -15,8 +16,13 @@ export class SketcherDialog extends Dialog<IDict> {
       gridSize: 64,
       sharedModel: options.toolbarModel.sharedModel
     });
-    const body = <SketcherReactWidget model={model} />;
-    super({ title: 'Sketcher', body, buttons: [] });
+    const body = (
+      <SketcherReactWidget
+        model={model}
+        closeCallback={options.closeCallback}
+      />
+    );
+    super({ title: 'Sketcher', body, buttons: [], hasClose: false });
     this.addClass('jpcad-sketcher-SketcherDialog');
   }
 }

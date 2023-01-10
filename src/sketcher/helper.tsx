@@ -65,7 +65,7 @@ export function ToolbarSwitch(props: {
   label: string;
   toggled: boolean;
   onClick: () => void;
-}) {
+}): JSX.Element {
   return (
     <Button
       className={`jp-Button jp-mod-minimal jp-ToolbarButtonComponent jp-mod-styled ${

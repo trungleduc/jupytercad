@@ -20,13 +20,20 @@ export class SketcherToolbarReact extends React.Component<IProps> {
           className={'jp-Button jp-mod-minimal jp-ToolbarButtonComponent'}
           style={{ color: 'var(--jp-ui-font-color1)' }}
           onClick={async () => {
-            const dialog = new SketcherDialog({
-              toolbarModel: this.props.toolbarModel
-            });
+            const props = {
+              toolbarModel: this.props.toolbarModel,
+              closeCallback: {
+                handler: () => {
+                  /* Awful hack to allow the body can close the dialog*/
+                }
+              }
+            };
+            const dialog = new SketcherDialog(props);
+            props.closeCallback.handler = () => dialog.close();
             await dialog.launch();
           }}
         >
-          NEW SKETCH
+          NEW
         </Button>
       </div>
     );

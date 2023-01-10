@@ -1,3 +1,4 @@
+import { ToolbarButtonComponent, closeIcon } from '@jupyterlab/ui-components';
 import * as React from 'react';
 import {
   distance,
@@ -10,6 +11,7 @@ import { PanZoom } from './panzoom';
 import { IOperator, IPosition, ISketcherModel } from './types';
 interface IProps {
   model: ISketcherModel;
+  closeCallback: { handler: () => void };
 }
 interface IState {
   mode?: IOperator;
@@ -348,10 +350,12 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
   };
 
   update = (): void => {
-    const canvas = this._canvasRef.current!;
-    const currentDiv = this._divRef.current!;
-
-    const ctx = canvas.getContext('2d')!;
+    const canvas = this._canvasRef.current;
+    const currentDiv = this._divRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !currentDiv) {
+      return;
+    }
     const mouse = this._mouse;
     const panZoom = this._panZoom;
 
@@ -423,6 +427,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
   saveButtonOnClick = async (): Promise<void> => {
     if (this.state.sketchName) {
       await this.props.model.save(this.state.sketchName, this.state.plane);
+      this.props.closeCallback.handler();
     }
   };
   render(): React.ReactNode {
@@ -477,6 +482,13 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
             label="Save"
             toggled={false}
             onClick={this.saveButtonOnClick}
+          />
+
+          <ToolbarButtonComponent
+            icon={closeIcon}
+            onClick={() => {
+              this.props.closeCallback.handler();
+            }}
           />
         </div>
         <canvas
