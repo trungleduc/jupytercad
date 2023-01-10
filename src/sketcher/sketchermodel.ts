@@ -1,16 +1,23 @@
+import { showErrorMessage } from '@jupyterlab/apputils';
 import { v4 as uuid } from 'uuid';
 
 import { IDict, IJupyterCadDoc } from '../types';
 import { IJCadObject } from '../_interface/jcad';
+import { IGeomCircle, IGeomLineSegment } from '../_interface/sketch';
+
 import { distance } from './helper';
+import { Line } from './elements/line';
+import { Point } from './elements/point';
 import {
   ICircle,
   ILine,
   IOperator,
+  IPlane,
   IPoint,
   IPosition,
   ISketcherModel
 } from './types';
+import { Circle } from './elements/circle';
 
 export class SketcherModel implements ISketcherModel {
   constructor(options: { gridSize: number; sharedModel?: IJupyterCadDoc }) {
@@ -53,7 +60,7 @@ export class SketcherModel implements ISketcherModel {
       return near;
     }
     const id = uuid();
-    this._points.set(id, { position, option: option });
+    this._points.set(id, new Point(position.x, position.y, option));
     return id;
   }
   removePoint(id: string): void {
@@ -72,7 +79,7 @@ export class SketcherModel implements ISketcherModel {
 
   addLine(start: IPosition, end: IPosition): string {
     const id = uuid();
-    this._lines.set(id, { start, end });
+    this._lines.set(id, new Line(start, end));
     return id;
   }
   removeLine(id: string): void {
@@ -93,7 +100,7 @@ export class SketcherModel implements ISketcherModel {
 
   addCircle(center: IPosition, radius: number): void {
     const id = uuid();
-    this._circles.set(id, { center, radius });
+    this._circles.set(id, new Circle(center, radius));
     return id;
   }
   removeCircle(id: string): void {
@@ -111,34 +118,112 @@ export class SketcherModel implements ISketcherModel {
     }
     return circles;
   }
-  save(): void {
-    const newSketch: IJCadObject = {
-      shape: 'Sketcher::SketchObject',
-      name: 'NewSketch' + this._int,
-      visible: true,
-      parameters: {
-        Geometry: [
-          {
-            CenterX: 15.616811,
-            NormalZ: 1,
-            AngleXU: 0,
-            Radius: 15.294874,
-            TypeId: 'Part::GeomCircle',
-            CenterY: 25.640715,
-            CenterZ: 0,
-            NormalY: 0,
-            NormalX: 0
-          }
-        ]
-      }
-    };
-    this._int += 1;
-    this._sharedModel?.addObject(newSketch);
+
+  async save(fileName: string, plane: IPlane): Promise<void> {
+    if (!this._sharedModel) {
+      return;
+    }
+    if (!this._sharedModel.objectExists(fileName)) {
+      const geometryList: (IGeomCircle | IGeomLineSegment)[] = [];
+      this._circles.forEach(
+        c =>
+          void geometryList.push(
+            this._writeCircle(c.export(this._gridSize), plane)
+          )
+      );
+      this._lines.forEach(
+        l =>
+          void geometryList.push(
+            this._writeLine(l.export(this._gridSize), plane)
+          )
+      );
+      const newSketch: IJCadObject = {
+        shape: 'Sketcher::SketchObject',
+        name: fileName,
+        visible: true,
+        parameters: {
+          Geometry: geometryList
+        }
+      };
+      this._sharedModel?.addObject(newSketch);
+    } else {
+      showErrorMessage(
+        'The object already exists',
+        'There is an existing object with the same name.'
+      );
+    }
   }
-  private _int = 0;
-  private _points: Map<string, IPoint> = new Map();
-  private _lines: Map<string, ILine> = new Map();
-  private _circles: Map<string, ICircle> = new Map([]);
+
+  private _writeLine(l: ILine, plane: IPlane): IGeomLineSegment {
+    let StartX = 0;
+    let StartY = 0;
+    let StartZ = 0;
+    let EndX = 0;
+    let EndY = 0;
+    let EndZ = 0;
+    if (plane === 'XY') {
+      StartX = l.start.x;
+      StartY = l.start.y;
+      EndX = l.end.x;
+      EndY = l.end.y;
+    } else if (plane === 'YZ') {
+      StartY = l.start.x;
+      StartZ = l.start.y;
+      EndY = l.end.x;
+      EndZ = l.end.y;
+    } else {
+      StartZ = l.start.x;
+      StartX = l.start.y;
+      EndZ = l.end.x;
+      EndX = l.end.y;
+    }
+    return {
+      TypeId: 'Part::GeomLineSegment',
+      StartX,
+      StartY,
+      StartZ,
+      EndX,
+      EndY,
+      EndZ
+    };
+  }
+  private _writeCircle(c: ICircle, plane: IPlane): IGeomCircle {
+    let CenterX, CenterY, CenterZ: number;
+    let NormalX = 0;
+    let NormalY = 0;
+    let NormalZ = 0;
+    if (plane === 'XY') {
+      CenterX = c.center.x;
+      CenterY = c.center.y;
+      CenterZ = 0;
+      NormalZ = 1;
+    } else if (plane === 'YZ') {
+      CenterX = 0;
+      CenterY = c.center.x;
+      CenterZ = c.center.y;
+      NormalX = 1;
+    } else {
+      CenterX = c.center.y;
+      CenterY = 0;
+      CenterZ = c.center.x;
+      NormalY = 1;
+    }
+
+    return {
+      TypeId: 'Part::GeomCircle',
+      CenterX,
+      CenterY,
+      CenterZ,
+      NormalX,
+      NormalY,
+      NormalZ,
+      Radius: c.radius,
+      AngleXU: 0
+    };
+  }
+  private _points: Map<string, Point> = new Map();
+  private _lines: Map<string, Line> = new Map();
+  private _circles: Map<string, Circle> = new Map([]);
   private _gridSize: number;
   private _editing: { type: IOperator | null; content: IDict | null } = {
     type: null,

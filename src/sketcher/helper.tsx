@@ -53,15 +53,13 @@ export function drawCircle(
   ctx.lineWidth = lineWidth;
   ctx.strokeStyle = strokeStyle;
   ctx.beginPath();
-  ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI)
+  ctx.arc(center.x, center.y, radius, 0, 2 * Math.PI);
   ctx.stroke();
   ctx.closePath();
 
   ctx.lineWidth = oldlineWidth;
   ctx.strokeStyle = oldStroke;
 }
-
-
 
 export function ToolbarSwitch(props: {
   label: string;

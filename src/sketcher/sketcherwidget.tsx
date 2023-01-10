@@ -8,19 +8,20 @@ import {
 } from './helper';
 import { PanZoom } from './panzoom';
 import { IOperator, IPosition, ISketcherModel } from './types';
-
 interface IProps {
   model: ISketcherModel;
 }
 interface IState {
   mode?: IOperator;
+  plane: 'XY' | 'YZ' | 'ZX';
+  sketchName?: string;
   currentPointer?: IPosition;
 }
 
 export class SketcherReactWidget extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = {};
+    this.state = { plane: 'XY' };
     this._gridSize = props.model.gridSize;
   }
 
@@ -419,9 +420,10 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
       }
     };
 
-  saveButtonOnClick = (): void => {
-    console.log('clicked');
-    this.props.model.save()
+  saveButtonOnClick = async (): Promise<void> => {
+    if (this.state.sketchName) {
+      await this.props.model.save(this.state.sketchName, this.state.plane);
+    }
   };
   render(): React.ReactNode {
     return (
@@ -430,7 +432,21 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
         ref={this._divRef}
         style={{ overflow: 'hidden', width: '100%', height: '100%' }}
       >
-        <div className=" lm-Widget jp-Toolbar jpcad-sketcher-Sketcher-Toolbar">
+        <div className="lm-Widget jp-Toolbar jpcad-sketcher-Sketcher-Toolbar">
+          <div className="jp-HTMLSelect jp-DefaultStyle jp-Notebook-toolbarCellTypeDropdown">
+            <select
+              onChange={e =>
+                this.setState(old => ({
+                  ...old,
+                  plane: e.target.value as any
+                }))
+              }
+            >
+              <option value={'XY'}>XY-plane</option>
+              <option value={'YZ'}>YZ-plane</option>
+              <option value={'ZX'}>ZX-Plane</option>
+            </select>
+          </div>
           <div
             style={{
               boxShadow: '0 0 3px var(--jp-border-color0) inset',
@@ -446,7 +462,17 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
               />
             ))}
           </div>
-
+          <div style={{ flexGrow: 1 }}></div>
+          <input
+            style={{ height: 25 }}
+            className="jp-mod-styled"
+            type="text"
+            placeholder="Sketch name"
+            value={this.state.sketchName}
+            onChange={e =>
+              this.setState(old => ({ ...old, sketchName: e.target.value }))
+            }
+          />
           <ToolbarSwitch
             label="Save"
             toggled={false}

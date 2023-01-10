@@ -4,6 +4,7 @@ from ..base_prop import BaseProp
 
 try:
     import freecad as fc
+    import Part
 except ImportError:
     fc = None
 
@@ -32,15 +33,15 @@ class Part_GeomLineSegment(BaseProp):
     def jcad_to_fc(prop_value: Dict, fc_object: Any, **kwargs) -> Any:
         if not fc:
             return
-
         StartPoint = fc.app.Base.Vector(
             prop_value['StartX'], prop_value['StartY'], prop_value['StartZ']
-        )
-        fc_object.StartPoint = StartPoint
-
+            )
         EndPoint = fc.app.Base.Vector(
             prop_value['EndX'], prop_value['EndY'], prop_value['EndZ']
         )
-        fc_object.EndPoint = EndPoint
-
-        return None
+        if fc_object:
+            fc_object.StartPoint = StartPoint
+            fc_object.EndPoint = EndPoint
+            return None
+        else:
+            return Part.LineSegment(StartPoint, EndPoint)
