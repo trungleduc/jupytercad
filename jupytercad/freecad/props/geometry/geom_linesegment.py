@@ -35,7 +35,7 @@ class Part_GeomLineSegment(BaseProp):
             return
         StartPoint = fc.app.Base.Vector(
             prop_value['StartX'], prop_value['StartY'], prop_value['StartZ']
-            )
+        )
         EndPoint = fc.app.Base.Vector(
             prop_value['EndX'], prop_value['EndY'], prop_value['EndZ']
         )

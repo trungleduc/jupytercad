@@ -2,6 +2,7 @@ from typing import Any, List
 
 from .base_prop import BaseProp
 
+
 class App_PropertyLinkList(BaseProp):
     @staticmethod
     def name() -> str:
