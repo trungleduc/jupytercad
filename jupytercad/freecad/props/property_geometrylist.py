@@ -17,28 +17,30 @@ class Part_PropertyGeometryList(BaseProp):
         return ret
 
     @staticmethod
-    def jcad_to_fc(prop_value: List, fc_prop: List=[], **kwargs) -> Any:
+    def jcad_to_fc(prop_value: List, fc_prop: List = [], **kwargs) -> Any:
         # We do not handle the case of adding or removing yet.
         n_objects = len(fc_prop)
 
-        n_new_objects= len(prop_value)
-        if n_objects > 0 and n_objects == n_new_objects  :
-
-            for idx, jcad_geo in enumerate(prop_value) :
+        n_new_objects = len(prop_value)
+        if n_objects > 0 and n_objects == n_new_objects:
+            # Update existing geometries
+            for idx, jcad_geo in enumerate(prop_value):
                 if jcad_geo['TypeId'] in geom_handlers:
-                    geom_handlers[jcad_geo['TypeId']].jcad_to_fc(jcad_geo, fc_object=fc_prop[idx])
+                    geom_handlers[jcad_geo['TypeId']].jcad_to_fc(
+                        jcad_geo, fc_object=fc_prop[idx]
+                    )
             return fc_prop
 
         if n_objects == 0 and n_new_objects > 0:
-
-            for  jcad_geo in prop_value:
+            # Create new geometries
+            for jcad_geo in prop_value:
                 if jcad_geo['TypeId'] in geom_handlers:
-                    fc_geo = geom_handlers[jcad_geo['TypeId']].jcad_to_fc(jcad_geo, fc_object=None)
+                    fc_geo = geom_handlers[jcad_geo['TypeId']].jcad_to_fc(
+                        jcad_geo, fc_object=None
+                    )
 
                     fc_prop.append(fc_geo)
-        
-            return fc_prop
-        
-        return None
-            
 
+            return fc_prop
+
+        return None
