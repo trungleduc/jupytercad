@@ -4,6 +4,7 @@ from ..base_prop import BaseProp
 
 try:
     import freecad as fc
+    import Part
 except ImportError:
     fc = None
 
@@ -35,18 +36,24 @@ class Part_GeomCircle(BaseProp):
     def jcad_to_fc(prop_value: Dict, fc_object: Any, **kwargs) -> Any:
         if not fc:
             return
-
         Center = fc.app.Base.Vector(
-            prop_value['CenterX'], prop_value['CenterY'], prop_value['CenterZ']
+            prop_value['CenterX'],
+            prop_value['CenterY'],
+            prop_value['CenterZ'],
         )
-        fc_object.Center = Center
 
         Axis = fc.app.Base.Vector(
-            prop_value['NormalX'], prop_value['NormalY'], prop_value['NormalZ']
+            prop_value['NormalX'],
+            prop_value['NormalY'],
+            prop_value['NormalZ'],
         )
-        fc_object.Axis = Axis
-    
-        fc_object.AngleXU = prop_value['AngleXU']
-        fc_object.Radius = prop_value['Radius']
-        
-        return None
+
+        Radius = prop_value['Radius']
+        if fc_object:
+            fc_object.Center = Center
+            fc_object.Axis = Axis
+            fc_object.AngleXU = prop_value['AngleXU']
+            fc_object.Radius = Radius
+            return None
+        else:
+            return Part.Circle(Center, Axis, Radius)

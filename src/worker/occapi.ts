@@ -14,6 +14,7 @@ import { IIntersection } from '../_interface/intersection';
 import { v4 as uuid } from 'uuid';
 import { ISketchObject } from '../_interface/sketch';
 import { _GeomCircle } from './geometry/geomCircle';
+import { _GeomLine } from './geometry/geomLineSegment';
 
 const SHAPE_CACHE = new Map<string, TopoDS_Shape>();
 export function operatorCache<T>(
@@ -213,13 +214,28 @@ export function _SketchObject(
   arg: ISketchObject,
   content: IJCadContent
 ): TopoDS_Shape | undefined {
-  console.log('arg', arg);
+  const oc = getOcc();
+  const builder = new oc.BRep_Builder();
+  const compound = new oc.TopoDS_Compound();
+  if (arg.Geometry.length === 0) {
+    return undefined;
+  }
+  builder.MakeCompound(compound);
   for (const geom of arg.Geometry) {
-    if (geom.TypeId === 'Part::GeomCircle') {
-      return _GeomCircle(geom);
+    switch (geom.TypeId) {
+      case 'Part::GeomCircle':
+        builder.Add(compound, _GeomCircle(geom));
+        break;
+
+      case 'Part::GeomLineSegment': {
+        builder.Add(compound, _GeomLine(geom));
+        break;
+      }
+      default:
+        break;
     }
   }
-  return undefined;
+  return compound;
 }
 
 export function _loadBrep(arg: { content: string }): TopoDS_Shape | undefined {

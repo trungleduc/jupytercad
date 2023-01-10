@@ -17,7 +17,7 @@ interface IState {
 export class ToolbarReact extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
-    this.state = { selected: 'SKETCHER' }; // TODO Swtich back
+    this.state = { selected: 'PART' };
     this.props.toolbarModel.jcadModel?.clientStateChanged.connect(
       this._onClientSharedStateChanged
     );

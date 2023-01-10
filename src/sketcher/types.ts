@@ -1,5 +1,6 @@
 import { IDict } from '../types';
 
+export type IPlane = 'XY' | 'YZ' | 'ZX';
 export interface IPosition {
   x: number;
   y: number;
@@ -44,9 +45,9 @@ export interface ISketcherModel {
   getLineById(id: string): ILine | undefined;
   getLineByControlPoint(pointId: string): string[];
 
-  addCircle(center: IPosition, radius: number): void
-  removeCircle(id: string): void
-  getCircleById(id: string): ICircle | undefined
-  getCircleByControlPoint(id: string): string[]
-  save(): void
+  addCircle(center: IPosition, radius: number): void;
+  removeCircle(id: string): void;
+  getCircleById(id: string): ICircle | undefined;
+  getCircleByControlPoint(id: string): string[];
+  save(fileName: string, plane: 'XY' | 'YZ' | 'ZX'): Promise<void>;
 }
