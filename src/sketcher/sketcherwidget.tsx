@@ -20,6 +20,7 @@ interface IState {
   currentPointer?: IPosition;
 }
 
+const TOOLBAR_HEIGHT = 30;
 export class SketcherReactWidget extends React.Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
@@ -53,7 +54,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     const rect = currentDiv.getBoundingClientRect();
 
     if (rect?.width && rect?.height) {
-      canvas.height = rect.height - 30; // Remove the height of the toolbar
+      canvas.height = rect.height - TOOLBAR_HEIGHT; // Remove the height of the toolbar
       canvas.width = rect.width;
     }
 
@@ -90,7 +91,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
               model.removeLine(tempLineId);
             }
             const newTempLine = model.addLine(startPoint.position, worldPos);
-            model.updateEditiing('LINE', {
+            model.updateEdit('LINE', {
               ...model.editing.content,
               tempLine: newTempLine
             });
@@ -112,7 +113,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
             }
             const radius = distance(worldPos, centerPoint.position);
             const newTempCircle = model.addCircle(centerPoint.position, radius);
-            model.updateEditiing('CIRCLE', {
+            model.updateEdit('CIRCLE', {
               ...model.editing.content,
               tempCircle: newTempCircle
             });
@@ -151,9 +152,6 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
   };
 
   handleLeftClick = (e: MouseEvent): void => {
-    if (!this._canvasRef.current) {
-      return;
-    }
     const ctx = this.ctx;
     if (!ctx) {
       return;
@@ -256,6 +254,9 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     }
 
     panZoom.apply();
+
+    ctx.save();
+
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#ccc';
     ctx.beginPath();
@@ -269,6 +270,8 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.stroke();
     ctx.closePath();
 
+    ctx.restore();
+
     this.drawCenter(size);
   };
 
@@ -277,6 +280,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     const canvas = this._canvasRef.current!;
     const ctx = canvas.getContext('2d')!;
     const center = panZoom.toScreen({ x: 0, y: 0 });
+    ctx.save();
     ctx.lineWidth = 1;
     ctx.strokeStyle = '#000';
 
@@ -292,6 +296,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.stroke();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.closePath();
+    ctx.restore();
   };
 
   drawPointer = (x: number, y: number): void => {
@@ -300,6 +305,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     const ctx = canvas.getContext('2d')!;
     const worldCoord = this.screenToWorldPos({ x, y });
     panZoom.apply();
+    ctx.save();
     ctx.lineWidth = 0.5;
     ctx.strokeStyle = '#000';
     ctx.beginPath();
@@ -316,7 +322,7 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
     ctx.setTransform(1, 0, 0, 1, 0, 0); //reset the transform so the lineWidth is 1
     ctx.stroke();
     ctx.closePath();
-
+    ctx.restore();
     const newScreenPos = panZoom.toScreen(worldCoord);
     drawPoint(ctx, newScreenPos, 'crimson');
   };
@@ -364,8 +370,11 @@ export class SketcherReactWidget extends React.Component<IProps, IState> {
 
     const rect = currentDiv.getBoundingClientRect();
 
-    if (canvas.width !== rect.width || canvas.height !== rect.height - 30) {
-      canvas.height = rect.height - 30; // Remove the height of the toolbar
+    if (
+      canvas.width !== rect.width ||
+      canvas.height !== rect.height - TOOLBAR_HEIGHT
+    ) {
+      canvas.height = rect.height - TOOLBAR_HEIGHT; // Remove the height of the toolbar
       canvas.width = rect.width;
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);

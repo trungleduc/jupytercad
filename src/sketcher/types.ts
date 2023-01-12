@@ -32,7 +32,7 @@ export interface ISketcherModel {
   editing: { type: IOperator | null; content: IDict | null };
 
   startEdit(type: IOperator, content: IDict): void;
-  updateEditiing(type: IOperator, content: IDict): void;
+  updateEdit(type: IOperator, content: IDict): void;
   stopEdit(): void;
 
   addPoint(position: IPosition, option?: { color: string }): string;

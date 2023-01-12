@@ -10,7 +10,7 @@ export class PanZoom {
   apply(): void {
     this.ctx.setTransform(this.scale, 0, 0, this.scale, this.x, this.y);
   }
-  scaleAt(x: number, y: number, sc: number) {
+  scaleAt(x: number, y: number, sc: number): void {
     // x & y are screen coords, not world
     this.scale *= sc;
     this.x = x - (x - this.x) * sc;

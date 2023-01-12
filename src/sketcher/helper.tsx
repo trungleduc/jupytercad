@@ -10,10 +10,8 @@ export function drawPoint(
   size = 6
 ): void {
   const oldFill = ctx.fillStyle;
-  ctx.beginPath();
   ctx.fillStyle = fillStyle;
   ctx.fillRect(point.x - size / 2, point.y - size / 2, size, size);
-  ctx.closePath();
   ctx.fillStyle = oldFill;
 }
 
@@ -24,8 +22,7 @@ export function drawLine(
   strokeStyle: string,
   lineWidth = 0.5
 ): void {
-  const oldlineWidth = ctx.lineWidth;
-  const oldStroke = ctx.strokeStyle;
+  ctx.save();
 
   ctx.lineWidth = lineWidth;
   ctx.strokeStyle = strokeStyle;
@@ -36,8 +33,7 @@ export function drawLine(
   ctx.stroke();
   ctx.closePath();
 
-  ctx.lineWidth = oldlineWidth;
-  ctx.strokeStyle = oldStroke;
+  ctx.restore();
 }
 
 export function drawCircle(
@@ -47,8 +43,7 @@ export function drawCircle(
   strokeStyle: string,
   lineWidth = 1
 ): void {
-  const oldlineWidth = ctx.lineWidth;
-  const oldStroke = ctx.strokeStyle;
+  ctx.save();
 
   ctx.lineWidth = lineWidth;
   ctx.strokeStyle = strokeStyle;
@@ -57,8 +52,7 @@ export function drawCircle(
   ctx.stroke();
   ctx.closePath();
 
-  ctx.lineWidth = oldlineWidth;
-  ctx.strokeStyle = oldStroke;
+  ctx.restore();
 }
 
 export function ToolbarSwitch(props: {

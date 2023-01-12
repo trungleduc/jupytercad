@@ -44,7 +44,7 @@ export class SketcherModel implements ISketcherModel {
     this._editing.type = type;
     this._editing.content = content;
   }
-  updateEditiing(type: IOperator, content: IDict): void {
+  updateEdit(type: IOperator, content: IDict): void {
     if (type === this._editing.type) {
       this.editing.content = content;
     }

@@ -33,7 +33,7 @@ export class ReactAnnotations extends React.Component<IProps> {
     });
   }
 
-  render() {
+  render(): JSX.Element {
     const annotationIds = this._model?.getAnnotationIds();
 
     if (!annotationIds || this._model === null) {
