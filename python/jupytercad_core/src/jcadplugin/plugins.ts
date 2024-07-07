@@ -120,7 +120,7 @@ const activate = (
         format: 'text',
         size: undefined,
         content:
-          '{\n\t"objects": [],\n\t"options": {},\n\t"metadata": {},\n\t"outputs": {}}'
+          '{\n\t"objects": [],\n\t"options": {},\n\t"metadata": {},\n\t"outputs": {},\n\t"forks": {}}'
       });
 
       // Open the newly created file with the 'Editor'

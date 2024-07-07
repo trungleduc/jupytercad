@@ -1,12 +1,12 @@
 import {
-  IAnnotationModel,
   JupyterCadDoc,
-  IJupyterCadTracker
+  IJupyterCadTracker,
+  IJCadFormSchemaRegistry
 } from '@jupytercad/schema';
 import { SidePanel } from '@jupyterlab/ui-components';
 
 import { IControlPanelModel } from '../types';
-import { Annotations } from './annotations';
+import { ObjectProperties } from './objectproperties';
 import { ControlPanelHeader } from './header';
 import { ObjectTree } from './objecttree';
 
@@ -15,24 +15,30 @@ export class LeftPanelWidget extends SidePanel {
     super();
     this.addClass('jpcad-sidepanel-widget');
     this._model = options.model;
-    this._annotationModel = options.annotationModel;
+
     const header = new ControlPanelHeader();
     this.header.addWidget(header);
 
     const tree = new ObjectTree({ controlPanelModel: this._model });
     this.addWidget(tree);
 
-    const annotations = new Annotations({ model: this._annotationModel });
-    this.addWidget(annotations);
-
-    options.tracker.currentChanged.connect((_, changed) => {
+    const properties = new ObjectProperties({
+      controlPanelModel: this._model,
+      formSchemaRegistry: options.formSchemaRegistry,
+      tracker: options.tracker
+    });
+    this.addWidget(properties);
+    this._model.documentChanged.connect((_, changed) => {
       if (changed) {
-        header.title.label = changed.context.localPath;
-        this._annotationModel.context =
-          options.tracker.currentWidget?.context || undefined;
+        if (changed.context.model.sharedModel.editable) {
+          header.title.label = changed.context.localPath;
+          properties.show();
+        } else {
+          header.title.label = `${changed.context.localPath} - Read Only`;
+          properties.hide();
+        }
       } else {
         header.title.label = '-';
-        this._annotationModel.context = undefined;
       }
     });
   }
@@ -42,13 +48,12 @@ export class LeftPanelWidget extends SidePanel {
   }
 
   private _model: IControlPanelModel;
-  private _annotationModel: IAnnotationModel;
 }
 
 export namespace LeftPanelWidget {
   export interface IOptions {
     model: IControlPanelModel;
-    annotationModel: IAnnotationModel;
+    formSchemaRegistry: IJCadFormSchemaRegistry;
     tracker: IJupyterCadTracker;
   }
 

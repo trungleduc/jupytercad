@@ -27,6 +27,29 @@
           "type": "string"
         }
       }
+    },
+    "forks": {
+      "type": "object",
+      "title": "IJCadForks",
+      "patternProperties": {
+        "^.*$": {
+          "type": "object",
+          "title": "IJCadForkValue",
+          "required": ["objects"],
+          "additionalProperties": false,
+          "properties": {
+            "objects": {
+              "$ref": "#/definitions/jcadModel"
+            },
+            "operators": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
