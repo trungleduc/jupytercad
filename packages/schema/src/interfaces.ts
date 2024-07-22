@@ -112,6 +112,8 @@ export interface IJupyterCadDoc extends YDocument<IJupyterCadDocChange> {
 
   setShapeMeta(key: string, meta?: IDict): void;
 
+  addFork(name: string): string;
+
   metadataChanged: ISignal<IJupyterCadDoc, MapChange>;
   optionsChanged: ISignal<IJupyterCadDoc, MapChange>;
   objectsChanged: ISignal<IJupyterCadDoc, IJcadObjectDocChange>;

@@ -57,7 +57,8 @@ export class SuggestionModel {
   }
   async createFork(): Promise<string | undefined> {
     console.log('create new fork');
-    return;
+    const id = this.sharedModel?.addFork('foo');
+    return id;
   }
 
   async backToRoot(): Promise<void> {

@@ -14,6 +14,7 @@ class YJCad(YBaseDoc):
         self._ydoc["options"] = self._yoptions = Map()
         self._ydoc["metadata"] = self._ymetadata = Map()
         self._ydoc["outputs"] = self._youtputs = Map()
+        self._ydoc["forks"] = self._yforks = Map()
 
     def version(self) -> str:
         return "0.1.0"
@@ -28,8 +29,15 @@ class YJCad(YBaseDoc):
         options = self._yoptions.to_py()
         meta = self._ymetadata.to_py()
         outputs = self._youtputs.to_py()
+        forks = self._yforks.to_py()
         return json.dumps(
-            dict(objects=objects, options=options, metadata=meta, outputs=outputs),
+            dict(
+                objects=objects,
+                options=options,
+                metadata=meta,
+                outputs=outputs,
+                forks=forks,
+            ),
             indent=2,
         )
 
@@ -56,6 +64,9 @@ class YJCad(YBaseDoc):
         self._youtputs.clear()
         self._youtputs.update(valueDict.get("outputs", {}))
 
+        self._yforks.clear()
+        self._yforks.update(valueDict.get("forks", {}))
+
     def observe(self, callback: Callable[[str, Any], None]):
         self.unobserve()
         self._subscriptions[self._ystate] = self._ystate.observe(
@@ -72,4 +83,7 @@ class YJCad(YBaseDoc):
         )
         self._subscriptions[self._ymetadata] = self._ymetadata.observe_deep(
             partial(callback, "meta")
+        )
+        self._subscriptions[self._yforks] = self._yforks.observe_deep(
+            partial(callback, "forks")
         )

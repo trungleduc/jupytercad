@@ -2,8 +2,8 @@ import { MapChange, YDocument } from '@jupyter/ydoc';
 import { JSONExt, JSONObject } from '@lumino/coreutils';
 import { ISignal, Signal } from '@lumino/signaling';
 import * as Y from 'yjs';
-
-import { IJCadObject, IJCadOptions } from './_interface/jcad';
+import { v4 as uuid } from 'uuid';
+import { IJCadForkValue, IJCadObject, IJCadOptions } from './_interface/jcad';
 import {
   IDict,
   IJcadObjectDocChange,
@@ -23,9 +23,11 @@ export class JupyterCadDoc
     this._objects = this.ydoc.getArray<Y.Map<any>>('objects');
     this._metadata = this.ydoc.getMap<string>('metadata');
     this._outputs = this.ydoc.getMap<IPostResult>('outputs');
+    this._forks = this.ydoc.getMap<IJCadForkValue>('forks');
     this.undoManager.addToScope(this._objects);
 
     this._objects.observeDeep(this._objectsObserver);
+    this._forks.observeDeep(this._forksObserver);
     this._metadata.observe(this._metaObserver);
     this._options.observe(this._optionsObserver);
   }
@@ -248,6 +250,19 @@ export class JupyterCadDoc
     }
   }
 
+  addFork(name: string): string {
+    const id = uuid();
+    const currentObj = this._objects.toJSON();
+    const value: IJCadForkValue = {
+      objects: currentObj,
+      operators: []
+    };
+    this.transact(() => {
+      this._forks.set(id, value);
+    });
+    return id;
+  }
+
   static create(): IJupyterCadDoc {
     return new JupyterCadDoc();
   }
@@ -293,6 +308,12 @@ export class JupyterCadDoc
     this._changed.emit({ objectChange: changes });
   };
 
+  private _forksObserver = (events: Y.YEvent<any>[]): void => {
+    events.forEach(event => {
+      console.log('changerd', event);
+    });
+  };
+
   private _metaObserver = (event: Y.YMapEvent<string>): void => {
     this._metadataChanged.emit(event.keys);
   };
@@ -305,6 +326,7 @@ export class JupyterCadDoc
   private _options: Y.Map<any>;
   private _metadata: Y.Map<string>;
   private _outputs: Y.Map<IPostResult>;
+  private _forks: Y.Map<IJCadForkValue>;
   private _metadataChanged = new Signal<IJupyterCadDoc, MapChange>(this);
   private _optionsChanged = new Signal<IJupyterCadDoc, MapChange>(this);
   private _objectsChanged = new Signal<IJupyterCadDoc, IJcadObjectDocChange>(
