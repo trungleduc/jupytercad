@@ -107,9 +107,7 @@ test.describe('UI Test', () => {
       await page.goto();
 
       const fileName = 'test.jcad';
-      const fullPath = `examples/${fileName}`;
-      await page.notebook.openByPath(fullPath);
-      await page.notebook.activate(fullPath);
+      await page.getByTitle('Create a new JCAD Editor').first().click();
       await page.locator('div.jpcad-Spinner').waitFor({ state: 'hidden' });
 
       await page.waitForTimeout(1000);
@@ -118,7 +116,9 @@ test.describe('UI Test', () => {
       }
 
       await page.getByTitle('New Box').click();
-      page.locator('input[id^="id-jp-schemaform"][label="Name"]').fill('Foo');
+      await page
+        .locator('input[id^="id-jp-schemaform"][label="Name"]')
+        .fill('Foo');
       await page
         .locator('div.jp-Dialog-buttonLabel', {
           hasText: 'Submit'
@@ -300,12 +300,9 @@ test.describe('UI Test', () => {
 
   test.describe('JCAD creation test', () => {
     test.describe('Extension activation test', () => {
-      test('should create a new JCAD file', async ({ page, request }) => {
+      test('should create a CAD File', async ({ page, request }) => {
         await page.goto();
-        await page
-          .getByLabel('notebook content')
-          .getByText('New JCAD File')
-          .click();
+        await page.getByLabel('notebook content').getByText('CAD File').click();
 
         await page.getByTitle('New Box').getByRole('button').click();
         await page.getByRole('button', { name: 'Submit' }).click();
@@ -361,10 +358,8 @@ test.describe('UI Test', () => {
   test.describe('Console activation test', () => {
     test('should open console', async ({ page }) => {
       await page.goto();
-      await page
-        .getByLabel('notebook content')
-        .getByText('New JCAD File')
-        .click();
+      await page.getByLabel('notebook content').getByText('CAD File').click();
+      await page.getByRole('button', { name: 'More commands' }).click();
       await page.getByRole('button', { name: 'Toggle console' }).click();
       await page.getByRole('button', { name: 'Remove console' });
       await page.getByRole('textbox').nth(1).click();

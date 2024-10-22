@@ -22,6 +22,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
+import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper';
 
 import { FloatingAnnotation } from '../annotation';
 import { getCSSVariableColor, isLightTheme, throttle } from '../tools';
@@ -42,8 +43,9 @@ import {
   IPickedResult,
   IPointer,
   SELECTED_LINEWIDTH,
-  SELECTED_MESH_COLOR,
-  SELECTED_MESH_COLOR_CSS,
+  BOUNDING_BOX_COLOR,
+  BOUNDING_BOX_COLOR_CSS,
+  SELECTION_BOUNDING_BOX,
   buildShape,
   computeExplodedState,
   projectVector
@@ -54,6 +56,9 @@ interface IProps {
   viewModel: MainViewModel;
 }
 
+const CAMERA_NEAR = 1e-6;
+const CAMERA_FAR = 1e27;
+
 interface IStates {
   id: string; // ID of the component, it is used to identify which component
   //is the source of awareness updates.
@@ -63,6 +68,10 @@ interface IStates {
   annotations: IDict<IAnnotation>;
   firstLoad: boolean;
   wireframe: boolean;
+}
+
+interface ILineIntersection extends THREE.Intersection {
+  pointOnLine?: THREE.Vector3;
 }
 
 export class MainView extends React.Component<IProps, IStates> {
@@ -94,11 +103,7 @@ export class MainView extends React.Component<IProps, IStates> {
     this._mainViewModel.renderSignal.connect(this._requestRender, this);
     this._mainViewModel.workerBusy.connect(this._workerBusyHandler, this);
 
-    // @ts-ignore Missing ThreeJS typing
-    this._raycaster.params.Line2 = {};
-    // Is this threshold in pixels? It looks like it
-    // @ts-ignore Missing ThreeJS typing
-    this._raycaster.params.Line2.threshold = 50;
+    this._raycaster.params.Line2 = { threshold: 50 };
 
     this.state = {
       id: this._mainViewModel.id,
@@ -116,6 +121,13 @@ export class MainView extends React.Component<IProps, IStates> {
     this.addContextMenu();
     this._mainViewModel.initWorker();
     this._mainViewModel.initSignal();
+    window.addEventListener('jupytercadObjectSelection', (e: Event) => {
+      const customEvent = e as CustomEvent;
+
+      if (customEvent.detail.mainViewModelId === this._mainViewModel.id) {
+        this.lookAtPosition(customEvent.detail.objPosition);
+      }
+    });
   }
 
   componentDidUpdate(oldProps: IProps, oldState: IStates): void {
@@ -200,9 +212,14 @@ export class MainView extends React.Component<IProps, IStates> {
     if (this.divRef.current !== null) {
       DEFAULT_MESH_COLOR.set(getCSSVariableColor(DEFAULT_MESH_COLOR_CSS));
       DEFAULT_EDGE_COLOR.set(getCSSVariableColor(DEFAULT_EDGE_COLOR_CSS));
-      SELECTED_MESH_COLOR.set(getCSSVariableColor(SELECTED_MESH_COLOR_CSS));
+      BOUNDING_BOX_COLOR.set(getCSSVariableColor(BOUNDING_BOX_COLOR_CSS));
 
-      this._camera = new THREE.PerspectiveCamera(90, 2, 0.1, 1000);
+      this._camera = new THREE.PerspectiveCamera(
+        50,
+        2,
+        CAMERA_NEAR,
+        CAMERA_FAR
+      );
       this._camera.position.set(8, 8, 8);
       this._camera.up.set(0, 0, 1);
 
@@ -218,9 +235,14 @@ export class MainView extends React.Component<IProps, IStates> {
 
       this._renderer = new THREE.WebGLRenderer({
         alpha: true,
-        antialias: true
+        antialias: true,
+        stencil: true,
+        logarithmicDepthBuffer: true
       });
+
+      this._clock = new THREE.Clock();
       // this._renderer.setPixelRatio(window.devicePixelRatio);
+      this._renderer.autoClear = false;
       this._renderer.setClearColor(0x000000, 0);
       this._renderer.setSize(500, 500, false);
       this.divRef.current.appendChild(this._renderer.domElement); // mount using React ref
@@ -286,7 +308,11 @@ export class MainView extends React.Component<IProps, IStates> {
           this._model.syncCamera(
             {
               position: this._camera.position.toArray([]),
-              rotation: this._camera.rotation.toArray([]),
+              rotation: [
+                this._camera.rotation.x,
+                this._camera.rotation.y,
+                this._camera.rotation.z
+              ],
               up: this._camera.up.toArray([])
             },
             this._mainViewModel.id
@@ -304,7 +330,7 @@ export class MainView extends React.Component<IProps, IStates> {
       this._clippingPlaneMeshControl = new THREE.Mesh(
         new THREE.PlaneGeometry(1, 1),
         new THREE.MeshBasicMaterial({
-          color: 'black',
+          color: DEFAULT_MESH_COLOR,
           opacity: 0.2,
           transparent: true,
           side: THREE.DoubleSide
@@ -346,11 +372,42 @@ export class MainView extends React.Component<IProps, IStates> {
 
       this._transformControls.enabled = false;
       this._transformControls.visible = false;
+      this._createViewHelper();
     }
   };
 
+  private _createViewHelper() {
+    // Remove the existing ViewHelperDiv if it already exists
+    if (
+      this._viewHelperDiv &&
+      this.divRef.current?.contains(this._viewHelperDiv)
+    ) {
+      this.divRef.current.removeChild(this._viewHelperDiv);
+    }
+
+    // Create new ViewHelper
+    this._viewHelper = new ViewHelper(this._camera, this._renderer.domElement);
+    this._viewHelper.center = this._controls.target;
+
+    const viewHelperDiv = document.createElement('div');
+    viewHelperDiv.style.position = 'absolute';
+    viewHelperDiv.style.right = '0px';
+    viewHelperDiv.style.bottom = '0px';
+    viewHelperDiv.style.height = '128px';
+    viewHelperDiv.style.width = '128px';
+
+    this._viewHelperDiv = viewHelperDiv;
+
+    this.divRef.current?.appendChild(this._viewHelperDiv);
+
+    this._viewHelperDiv.addEventListener('pointerup', event =>
+      this._viewHelper.handleClick(event)
+    );
+  }
+
   animate = (): void => {
     this._requestID = window.requestAnimationFrame(this.animate);
+    const delta = this._clock.getDelta();
 
     for (const material of this._edgeMaterials) {
       material.resolution.set(
@@ -367,11 +424,16 @@ export class MainView extends React.Component<IProps, IStates> {
         this._clippingPlaneMesh.position.z - this._clippingPlane.normal.z
       );
     }
+    if (this._viewHelper.animating) {
+      this._viewHelper.update(delta);
+    }
 
     this._controls.update();
     this._renderer.setRenderTarget(null);
-    this._renderer.clearDepth();
+    this._renderer.clear();
     this._renderer.render(this._scene, this._camera);
+    this._viewHelper.render(this._renderer);
+    this.updateCameraRotation();
   };
 
   resizeCanvasToDisplaySize = (): void => {
@@ -381,10 +443,10 @@ export class MainView extends React.Component<IProps, IStates> {
         this.divRef.current.clientHeight,
         false
       );
-      if (this._camera.type === 'PerspectiveCamera') {
+      if (this._camera instanceof THREE.PerspectiveCamera) {
         this._camera.aspect =
           this.divRef.current.clientWidth / this.divRef.current.clientHeight;
-      } else {
+      } else if (this._camera instanceof THREE.OrthographicCamera) {
         this._camera.left = this.divRef.current.clientWidth / -2;
         this._camera.right = this.divRef.current.clientWidth / 2;
         this._camera.top = this.divRef.current.clientHeight / 2;
@@ -399,6 +461,31 @@ export class MainView extends React.Component<IProps, IStates> {
     this.animate();
     this.resizeCanvasToDisplaySize();
   };
+
+  private lookAtPosition(
+    position: { x: number; y: number; z: number } | [number, number, number]
+  ) {
+    this._targetPosition = new THREE.Vector3(
+      position[0],
+      position[1],
+      position[2]
+    );
+  }
+
+  private updateCameraRotation() {
+    if (this._targetPosition && this._camera && this._controls) {
+      const currentTarget = this._controls.target.clone();
+      const rotationSpeed = 0.1;
+      currentTarget.lerp(this._targetPosition, rotationSpeed);
+      this._controls.target.copy(currentTarget);
+
+      if (currentTarget.distanceTo(this._targetPosition) < 0.01) {
+        this._targetPosition = null;
+      }
+
+      this._controls.update();
+    }
+  }
 
   private _updateAnnotation() {
     Object.keys(this.state.annotations).forEach(key => {
@@ -478,9 +565,13 @@ export class MainView extends React.Component<IProps, IStates> {
 
     if (intersects.length > 0) {
       // Find the first intersection with a visible object
-      for (const intersect of intersects) {
-        // Object is hidden
-        if (!intersect.object.visible || !intersect.object.parent?.visible) {
+      for (const intersect of intersects as ILineIntersection[]) {
+        // Object is hidden or a bounding box
+        if (
+          !intersect.object.visible ||
+          !intersect.object.parent?.visible ||
+          intersect.object.name === SELECTION_BOUNDING_BOX
+        ) {
           continue;
         }
 
@@ -502,11 +593,7 @@ export class MainView extends React.Component<IProps, IStates> {
           : intersect.object;
         return {
           mesh: intersectMesh as BasicMesh,
-          // @ts-ignore Missing threejs typing
-          position: intersect.pointOnLine
-            ? // @ts-ignore Missing threejs typing
-              intersect.pointOnLine
-            : intersect.point
+          position: intersect.pointOnLine ?? intersect.point
         };
       }
     }
@@ -649,7 +736,7 @@ export class MainView extends React.Component<IProps, IStates> {
 
           if (selectedNames.includes(el.name)) {
             this._selectedMeshes.push(el as any as BasicMesh);
-            el.material.color = SELECTED_MESH_COLOR;
+            el.material.color = originalEdgeColor;
             el.material.linewidth = SELECTED_LINEWIDTH;
             el.userData.originalColor = originalEdgeColor.clone();
           } else {
@@ -663,15 +750,17 @@ export class MainView extends React.Component<IProps, IStates> {
       }
     });
 
-    // Update the reflength
-    this._updateRefLength();
+    // Update the reflength. We will update the camera position accordingly if there is a single object.
+    this._updateRefLength(
+      this._meshGroup.children.length === 1 || this._refLength === null
+    );
     // Set the expoded view if it's enabled
     this._setupExplodedView();
 
     // Clip plane rendering
     const planeGeom = new THREE.PlaneGeometry(
-      this._refLength! * 10, // *10 is a bit arbitrary and extreme but that does not impact performance or anything
-      this._refLength! * 10
+      this._refLength! * 1000, // *1000 is a bit arbitrary and extreme but that does not impact performance or anything
+      this._refLength! * 1000
     );
     const planeMat = new THREE.MeshPhongMaterial({
       color: DEFAULT_EDGE_COLOR,
@@ -685,6 +774,7 @@ export class MainView extends React.Component<IProps, IStates> {
       wireframe: this.state.wireframe
     });
     this._clippingPlaneMesh = new THREE.Mesh(planeGeom, planeMat);
+    this._clippingPlaneMesh.visible = this._clipSettings.enabled;
     this._clippingPlaneMesh.onAfterRender = renderer => {
       renderer.clearStencil();
     };
@@ -698,18 +788,16 @@ export class MainView extends React.Component<IProps, IStates> {
     this.setState(old => ({ ...old, loading: false }));
   };
 
-  private _updateRefLength(force = false): void {
-    if (this._meshGroup) {
-      if (
-        force ||
-        (this._refLength === null && this._meshGroup.children.length)
-      ) {
-        const boxSizeVec = new THREE.Vector3();
-        this._boundingGroup.getSize(boxSizeVec);
+  private _updateRefLength(updateCamera = false): void {
+    if (this._meshGroup && this._meshGroup.children.length) {
+      const boxSizeVec = new THREE.Vector3();
+      this._boundingGroup.getSize(boxSizeVec);
 
-        this._refLength =
-          Math.max(boxSizeVec.x, boxSizeVec.y, boxSizeVec.z) / 5 || 1;
-        this._updatePointers(this._refLength);
+      this._refLength =
+        Math.max(boxSizeVec.x, boxSizeVec.y, boxSizeVec.z) / 5 || 1;
+      this._updatePointersScale(this._refLength);
+
+      if (updateCamera) {
         this._camera.lookAt(this._scene.position);
 
         this._camera.position.set(
@@ -717,17 +805,15 @@ export class MainView extends React.Component<IProps, IStates> {
           10 * this._refLength,
           10 * this._refLength
         );
-        this._camera.far = 200 * this._refLength;
+      }
 
-        // Update clip plane size
-        this._clippingPlaneMeshControl.geometry = new THREE.PlaneGeometry(
-          this._refLength * 10,
-          this._refLength * 10
-        );
-      }
-      if (!this._meshGroup.children.length) {
-        this._refLength = null;
-      }
+      // Update clip plane size
+      this._clippingPlaneMeshControl.geometry = new THREE.PlaneGeometry(
+        this._refLength * 10,
+        this._refLength * 10
+      );
+    } else {
+      this._refLength = null;
     }
   }
 
@@ -823,6 +909,9 @@ export class MainView extends React.Component<IProps, IStates> {
                 pos.postShape = exported as any;
                 resolve();
               },
+              () => {
+                // Intentionally empty: no error handling needed for this case
+              }, // Empty function to handle errors
               options
             );
           });
@@ -839,12 +928,20 @@ export class MainView extends React.Component<IProps, IStates> {
       });
     }
   }
-  private _updatePointers(refLength): void {
-    this._pointerGeometry = new THREE.SphereGeometry(refLength / 10, 32, 32);
+
+  private _updatePointersScale(refLength): void {
+    this._pointer3D?.mesh.scale.set(
+      refLength / 10,
+      refLength / 10,
+      refLength / 10
+    );
 
     for (const clientId in this._collaboratorPointers) {
-      this._collaboratorPointers[clientId].mesh.geometry =
-        this._pointerGeometry;
+      this._collaboratorPointers[clientId].mesh.scale.set(
+        refLength / 10,
+        refLength / 10,
+        refLength / 10
+      );
     }
   }
 
@@ -861,6 +958,8 @@ export class MainView extends React.Component<IProps, IStates> {
       clientColor = Color.color(user?.color ?? 'steelblue') as Color.RGBColor;
     }
 
+    const geometry = new THREE.SphereGeometry(1, 32, 32);
+
     const material = new THREE.MeshBasicMaterial({
       color: clientColor
         ? new THREE.Color(
@@ -871,11 +970,19 @@ export class MainView extends React.Component<IProps, IStates> {
         : 'black'
     });
 
-    return new THREE.Mesh(this._pointerGeometry, material);
+    const mesh = new THREE.Mesh(geometry, material);
+    if (this._refLength) {
+      mesh.scale.set(
+        this._refLength / 10,
+        this._refLength / 10,
+        this._refLength / 10
+      );
+    }
+    return mesh;
   }
 
   private _updateSelected(selection: { [key: string]: ISelection }) {
-    // Reset original color for old selection
+    // Reset original color and remove bounding boxes for old selection
     for (const selectedMesh of this._selectedMeshes) {
       let originalColor = selectedMesh.userData.originalColor;
 
@@ -886,10 +993,17 @@ export class MainView extends React.Component<IProps, IStates> {
       if (selectedMesh.material?.color) {
         selectedMesh.material.color = originalColor;
       }
-      // @ts-ignore
-      if (selectedMesh.material?.linewidth) {
-        // @ts-ignore
-        selectedMesh.material.linewidth = DEFAULT_LINEWIDTH;
+
+      const boundingBox = selectedMesh.getObjectByName(SELECTION_BOUNDING_BOX);
+      if (boundingBox) {
+        selectedMesh.remove(boundingBox);
+      }
+
+      const material = selectedMesh.material as THREE.Material & {
+        linewidth?: number;
+      };
+      if (material?.linewidth) {
+        material.linewidth = DEFAULT_LINEWIDTH;
       }
     }
 
@@ -904,20 +1018,51 @@ export class MainView extends React.Component<IProps, IStates> {
         continue;
       }
 
-      // Prevents object from going back to DEFAULT_MESH_COLOR
-      if (!selectedMesh.userData.originalColor) {
-        selectedMesh.userData.originalColor =
-          selectedMesh.material.color.clone();
-      }
+      if (selectedMesh.name.startsWith('edge')) {
+        // Highlight edges using the old method
+        if (!selectedMesh.userData.originalColor) {
+          selectedMesh.userData.originalColor =
+            selectedMesh.material.color.clone();
+        }
 
-      this._selectedMeshes.push(selectedMesh);
-      if (selectedMesh?.material?.color) {
-        selectedMesh.material.color = SELECTED_MESH_COLOR;
-      }
-      // @ts-ignore
-      if (selectedMesh?.material?.linewidth) {
-        // @ts-ignore
-        selectedMesh.material.linewidth = SELECTED_LINEWIDTH;
+        this._selectedMeshes.push(selectedMesh);
+        if (selectedMesh?.material?.color) {
+          selectedMesh.material.color = BOUNDING_BOX_COLOR;
+        }
+
+        const material = selectedMesh.material as THREE.Material & {
+          linewidth?: number;
+        };
+        if (material?.linewidth) {
+          material.linewidth = SELECTED_LINEWIDTH;
+        }
+      } else {
+        // Highlight non-edges using a bounding box
+        this._selectedMeshes.push(selectedMesh);
+
+        // Create and add bounding box
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.LineBasicMaterial({
+          color: BOUNDING_BOX_COLOR,
+          depthTest: false
+        });
+        const boundingBox = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geometry),
+          material
+        );
+        boundingBox.name = SELECTION_BOUNDING_BOX;
+
+        // Set the bounding box size and position
+        const bbox = new THREE.Box3().setFromObject(selectedMesh);
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        boundingBox.scale.copy(size);
+
+        const center = new THREE.Vector3();
+        bbox.getCenter(center);
+        boundingBox.position.copy(center);
+
+        selectedMesh.add(boundingBox);
       }
     }
   }
@@ -1222,31 +1367,48 @@ export class MainView extends React.Component<IProps, IStates> {
   private _updateCamera() {
     const position = new THREE.Vector3().copy(this._camera.position);
     const up = new THREE.Vector3().copy(this._camera.up);
+    const target = this._controls.target.clone();
 
     this._camera.remove(this._cameraLight);
     this._scene.remove(this._camera);
 
     if (this._cameraSettings.type === 'Perspective') {
-      this._camera = new THREE.PerspectiveCamera(90, 2, 0.1, 1000);
+      this._camera = new THREE.PerspectiveCamera(
+        50,
+        2,
+        CAMERA_NEAR,
+        CAMERA_FAR
+      );
     } else {
       const width = this.divRef.current?.clientWidth || 0;
       const height = this.divRef.current?.clientHeight || 0;
+
+      const distance = position.distanceTo(target);
+      const zoomFactor = 1000 / distance;
 
       this._camera = new THREE.OrthographicCamera(
         width / -2,
         width / 2,
         height / 2,
-        height / -2
+        height / -2,
+        CAMERA_NEAR,
+        CAMERA_FAR
       );
+      this._camera.zoom = zoomFactor;
+      this._camera.updateProjectionMatrix();
     }
 
     this._camera.add(this._cameraLight);
+    this._createViewHelper();
 
     this._scene.add(this._camera);
     this._controls.object = this._camera;
 
     this._camera.position.copy(position);
     this._camera.up.copy(up);
+
+    const resizeEvent = new Event('resize');
+    window.dispatchEvent(resizeEvent);
   }
 
   private _updateClipping() {
@@ -1255,11 +1417,17 @@ export class MainView extends React.Component<IProps, IStates> {
       this._transformControls.enabled = true;
       this._transformControls.visible = true;
       this._clippingPlaneMeshControl.visible = this._clipSettings.showClipPlane;
+      if (this._clippingPlaneMesh) {
+        this._clippingPlaneMesh.visible = true;
+      }
     } else {
       this._renderer.localClippingEnabled = false;
       this._transformControls.enabled = false;
       this._transformControls.visible = false;
       this._clippingPlaneMeshControl.visible = false;
+      if (this._clippingPlaneMesh) {
+        this._clippingPlaneMesh.visible = false;
+      }
     }
   }
 
@@ -1268,7 +1436,9 @@ export class MainView extends React.Component<IProps, IStates> {
 
     DEFAULT_MESH_COLOR.set(getCSSVariableColor(DEFAULT_MESH_COLOR_CSS));
     DEFAULT_EDGE_COLOR.set(getCSSVariableColor(DEFAULT_EDGE_COLOR_CSS));
-    SELECTED_MESH_COLOR.set(getCSSVariableColor(SELECTED_MESH_COLOR_CSS));
+    BOUNDING_BOX_COLOR.set(getCSSVariableColor(BOUNDING_BOX_COLOR_CSS));
+
+    this._clippingPlaneMeshControl.material.color = DEFAULT_MESH_COLOR;
 
     this.setState(old => ({ ...old, lightTheme }));
   };
@@ -1313,7 +1483,8 @@ export class MainView extends React.Component<IProps, IStates> {
   render(): JSX.Element {
     return (
       <div
-        className="jcad-Mainview"
+        className="jcad-Mainview data-jcad-keybinding"
+        tabIndex={-2}
         style={{
           border: this.state.remoteUser
             ? `solid 3px ${this.state.remoteUser.color}`
@@ -1378,7 +1549,7 @@ export class MainView extends React.Component<IProps, IStates> {
   private _explodedViewLinesHelperGroup: THREE.Group | null = null; // The list of line helpers for the exploded view
   private _cameraSettings: CameraSettings = { type: 'Perspective' };
   private _clipSettings: ClipSettings = { enabled: false, showClipPlane: true };
-  private _clippingPlaneMeshControl: THREE.Mesh; // Plane mesh using for controlling the clip plane in the UI
+  private _clippingPlaneMeshControl: BasicMesh; // Plane mesh using for controlling the clip plane in the UI
   private _clippingPlaneMesh: THREE.Mesh | null = null; // Plane mesh used for "filling the gaps"
   private _clippingPlane = new THREE.Plane(new THREE.Vector3(-1, 0, 0), 0); // Mathematical object for clipping computation
   private _clippingPlanes = [this._clippingPlane];
@@ -1396,8 +1567,11 @@ export class MainView extends React.Component<IProps, IStates> {
   private _controls: OrbitControls; // Mouse controls
   private _transformControls: TransformControls; // Mesh position/rotation controls
   private _pointer3D: IPointer | null = null;
+  private _clock: THREE.Clock;
+  private _targetPosition: THREE.Vector3 | null = null;
+  private _viewHelper: ViewHelper;
+  private _viewHelperDiv: HTMLDivElement | null = null;
   private _collaboratorPointers: IDict<IPointer>;
-  private _pointerGeometry: THREE.SphereGeometry;
   private _contextMenu: ContextMenu;
   private _loadingTimeout: ReturnType<typeof setTimeout> | null;
 }

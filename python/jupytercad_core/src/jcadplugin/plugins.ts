@@ -1,7 +1,8 @@
 import {
   ICollaborativeDrive,
   SharedDocumentFactory
-} from '@jupyter/docprovider';
+} from '@jupyter/collaborative-drive';
+import { logoIcon } from '@jupytercad/base';
 import {
   IAnnotationModel,
   IAnnotationToken,
@@ -27,7 +28,6 @@ import { ConsolePanel, IConsoleTracker } from '@jupyterlab/console';
 import { IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-import { fileIcon } from '@jupyterlab/ui-components';
 
 import { JupyterCadWidgetFactory } from '../factory';
 import { JupyterCadJcadModelFactory } from './modelfactory';
@@ -85,7 +85,8 @@ const activate = (
     mimeTypes: ['text/json'],
     extensions: ['.jcad', '.JCAD'],
     fileFormat: 'text',
-    contentType: 'jcad'
+    contentType: 'jcad',
+    icon: logoIcon
   });
 
   const jcadSharedModelFactory: SharedDocumentFactory = () => {
@@ -99,6 +100,7 @@ const activate = (
   }
 
   widgetFactory.widgetCreated.connect((sender, widget) => {
+    widget.title.icon = logoIcon;
     widget.context.pathChanged.connect(() => {
       tracker.save(widget);
     });
@@ -111,9 +113,9 @@ const activate = (
   });
 
   app.commands.addCommand(CommandIDs.createNew, {
-    label: args => 'New JCAD File',
+    label: args => 'CAD File',
     caption: 'Create a new JCAD Editor',
-    icon: args => (args['isPalette'] ? undefined : fileIcon),
+    icon: logoIcon,
     execute: async args => {
       // Get the directory in which the JCAD file must be created;
       // otherwise take the current filebrowser directory
@@ -156,7 +158,6 @@ const activate = (
   if (palette) {
     palette.addItem({
       command: CommandIDs.createNew,
-      args: { isPalette: true },
       category: PALETTE_CATEGORY
     });
   }

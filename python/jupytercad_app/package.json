@@ -1,6 +1,6 @@
 {
   "name": "@jupytercad/jupytercad-app",
-  "version": "3.0.0-alpha.1",
+  "version": "3.0.0-alpha.3",
   "description": "A JupyterLab standalone app for 3D modelling.",
   "keywords": [
     "jupyter",
@@ -51,11 +51,11 @@
   "dependencies": {
     "@codemirror/state": "^6.2.0",
     "@codemirror/view": "^6.9.3",
-    "@jupyter/collaboration": "^2.0.0",
-    "@jupyter/docprovider": "^2.0.0",
-    "@jupyter/ydoc": "^0.3.4 || ^1.0.2",
-    "@jupytercad/base": "^3.0.0-alpha.1",
-    "@jupytercad/schema": "^3.0.0-alpha.1",
+    "@jupyter/collaboration": "^3.0.0-beta.8",
+    "@jupyter/collaborative-drive": "^3.0.0-beta.8",
+    "@jupyter/ydoc": "^3.0.0-a9",
+    "@jupytercad/base": "^3.0.0-alpha.3",
+    "@jupytercad/schema": "^3.0.0-alpha.3",
     "@jupyterlab/application": "^4.0.0",
     "@jupyterlab/application-extension": "^4.0.0",
     "@jupyterlab/apputils": "^4.0.0",
@@ -104,7 +104,7 @@
     "@lumino/widgets": "^2.0.0",
     "react": "^18.0.1",
     "yjs": "^13.5.40",
-    "yjs-widgets": "^0.3.4"
+    "yjs-widgets": "^0.3.7"
   },
   "devDependencies": {
     "@jupyterlab/builder": "^4.0.0",

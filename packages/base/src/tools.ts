@@ -3,6 +3,7 @@ import { ServerConnection } from '@jupyterlab/services';
 import { LabIcon } from '@jupyterlab/ui-components';
 import * as d3Color from 'd3-color';
 
+import logoStr from '../style/icon/logo.svg';
 import axesIconStr from '../style/icon/axes.svg';
 import boxIconStr from '../style/icon/box.svg';
 import coneIconStr from '../style/icon/cone.svg';
@@ -11,14 +12,20 @@ import cylinderIconStr from '../style/icon/cylinder.svg';
 import extrusionIconStr from '../style/icon/extrusion.svg';
 import intersectionIconStr from '../style/icon/intersection.svg';
 import jvControlLight from '../style/icon/jvcontrol.svg';
+import explodedIconStr from '../style/icon/exploded.svg';
 import minimizeIconStr from '../style/icon/minimize.svg';
 import sphereIconStr from '../style/icon/sphere.svg';
 import torusIconStr from '../style/icon/torus.svg';
 import unionIconStr from '../style/icon/union.svg';
-import clippingIconStr from '../style/icon/clipping.svg';
+import clippingIconStr from '../style/icon/clipPlane.svg';
 import chamferIconStr from '../style/icon/chamfer.svg';
 import filletIconStr from '../style/icon/fillet.svg';
 import wireframeIconStr from '../style/icon/wireframe.svg';
+
+export const logoIcon = new LabIcon({
+  name: 'jupytercad:logo',
+  svgstr: logoStr
+});
 
 export const jcLightIcon = new LabIcon({
   name: 'jupytercad:control-light',
@@ -82,7 +89,7 @@ export const axesIcon = new LabIcon({
 
 export const explodedViewIcon = new LabIcon({
   name: 'jupytercad:explodedView-icon',
-  svgstr: jvControlLight
+  svgstr: explodedIconStr
 });
 
 export const clippingIcon = new LabIcon({
