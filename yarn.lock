@@ -906,7 +906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@jupytercad/base@^3.1.7, @jupytercad/base@workspace:packages/base":
+"@jupytercad/base@^3.4.0, @jupytercad/base@workspace:packages/base":
   version: 0.0.0-use.local
   resolution: "@jupytercad/base@workspace:packages/base"
   dependencies:
@@ -914,8 +914,8 @@ __metadata:
     "@jupyter/collaboration": ^4
     "@jupyter/collaborative-drive": ^4
     "@jupyter/ydoc": ^3.0.0
-    "@jupytercad/occ-worker": ^3.1.7
-    "@jupytercad/schema": ^3.1.7
+    "@jupytercad/occ-worker": ^3.4.0
+    "@jupytercad/schema": ^3.4.0
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/apputils": ^4.0.0
     "@jupyterlab/completer": ^4.2.4
@@ -959,8 +959,8 @@ __metadata:
     "@jupyter/collaborative-drive": ^4
     "@jupyter/docprovider": ^4
     "@jupyter/ydoc": ^3.0.0
-    "@jupytercad/base": ^3.1.7
-    "@jupytercad/schema": ^3.1.7
+    "@jupytercad/base": ^3.4.0
+    "@jupytercad/schema": ^3.4.0
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/application-extension": ^4.0.0
     "@jupyterlab/apputils": ^4.0.0
@@ -1022,14 +1022,14 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupytercad/jupytercad-core@^3.1.7, @jupytercad/jupytercad-core@workspace:python/jupytercad_core":
+"@jupytercad/jupytercad-core@^3.4.0, @jupytercad/jupytercad-core@workspace:python/jupytercad_core":
   version: 0.0.0-use.local
   resolution: "@jupytercad/jupytercad-core@workspace:python/jupytercad_core"
   dependencies:
     "@jupyter/collaborative-drive": ^4
-    "@jupytercad/base": ^3.1.7
-    "@jupytercad/occ-worker": ^3.1.7
-    "@jupytercad/schema": ^3.1.7
+    "@jupytercad/base": ^3.4.0
+    "@jupytercad/occ-worker": ^3.4.0
+    "@jupytercad/schema": ^3.4.0
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/apputils": ^4.0.0
     "@jupyterlab/builder": ^4.0.0
@@ -1062,9 +1062,9 @@ __metadata:
   resolution: "@jupytercad/jupytercad-lab@workspace:python/jupytercad_lab"
   dependencies:
     "@jupyter/collaborative-drive": ^4
-    "@jupytercad/base": ^3.1.7
-    "@jupytercad/jupytercad-core": ^3.1.7
-    "@jupytercad/schema": ^3.1.7
+    "@jupytercad/base": ^3.4.0
+    "@jupytercad/jupytercad-core": ^3.4.0
+    "@jupytercad/schema": ^3.4.0
     "@jupyterlab/application": ^4.0.0
     "@jupyterlab/apputils": ^4.0.0
     "@jupyterlab/builder": ^4.0.0
@@ -1114,12 +1114,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupytercad/occ-worker@^3.1.7, @jupytercad/occ-worker@workspace:packages/occ-worker":
+"@jupytercad/occ-worker@^3.4.0, @jupytercad/occ-worker@workspace:packages/occ-worker":
   version: 0.0.0-use.local
   resolution: "@jupytercad/occ-worker@workspace:packages/occ-worker"
   dependencies:
-    "@jupytercad/opencascade": ^3.1.7
-    "@jupytercad/schema": ^3.1.7
+    "@jupytercad/opencascade": ^3.4.0
+    "@jupytercad/schema": ^3.4.0
     "@lumino/coreutils": ^2.0.0
     "@types/node": ^18.15.11
     copy-webpack-plugin: ^10.0.0
@@ -1135,7 +1135,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupytercad/opencascade@^3.1.7, @jupytercad/opencascade@workspace:packages/opencascade":
+"@jupytercad/opencascade@^3.4.0, @jupytercad/opencascade@workspace:packages/opencascade":
   version: 0.0.0-use.local
   resolution: "@jupytercad/opencascade@workspace:packages/opencascade"
   dependencies:
@@ -1147,7 +1147,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@jupytercad/schema@^3.1.7, @jupytercad/schema@workspace:packages/schema":
+"@jupytercad/schema@^3.4.0, @jupytercad/schema@workspace:packages/schema":
   version: 0.0.0-use.local
   resolution: "@jupytercad/schema@workspace:packages/schema"
   dependencies:
@@ -3722,12 +3722,11 @@ __metadata:
   linkType: hard
 
 "@types/glob@npm:*":
-  version: 8.1.0
-  resolution: "@types/glob@npm:8.1.0"
+  version: 9.0.0
+  resolution: "@types/glob@npm:9.0.0"
   dependencies:
-    "@types/minimatch": ^5.1.2
-    "@types/node": "*"
-  checksum: 9101f3a9061e40137190f70626aa0e202369b5ec4012c3fabe6f5d229cce04772db9a94fa5a0eb39655e2e4ad105c38afbb4af56a56c0996a8c7d4fc72350e3d
+    glob: "*"
+  checksum: a9ea3afe1eafbc8fb303d2d39cd786084aece75fd8eeae1bad8febbf6e0323b429145f31e779a3d68fa693b2a53648ec2c639ee4858fb29132f801c74678051c
   languageName: node
   linkType: hard
 
@@ -3785,13 +3784,6 @@ __metadata:
   version: 3.0.5
   resolution: "@types/minimatch@npm:3.0.5"
   checksum: c41d136f67231c3131cf1d4ca0b06687f4a322918a3a5adddc87ce90ed9dbd175a3610adee36b106ae68c0b92c637c35e02b58c8a56c424f71d30993ea220b92
-  languageName: node
-  linkType: hard
-
-"@types/minimatch@npm:^5.1.2":
-  version: 5.1.2
-  resolution: "@types/minimatch@npm:5.1.2"
-  checksum: 0391a282860c7cb6fe262c12b99564732401bdaa5e395bee9ca323c312c1a0f45efbf34dce974682036e857db59a5c9b1da522f3d6055aeead7097264c8705a8
   languageName: node
   linkType: hard
 
@@ -4702,13 +4694,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-generator-function@npm:^1.0.0":
-  version: 1.0.0
-  resolution: "async-generator-function@npm:1.0.0"
-  checksum: 74a71a4a2dd7afd06ebb612f6d612c7f4766a351bedffde466023bf6dae629e46b0d2cd38786239e0fbf245de0c7df76035465e16d1213774a0efb22fec0d713
-  languageName: node
-  linkType: hard
-
 "async-limiter@npm:~1.0.0":
   version: 1.0.1
   resolution: "async-limiter@npm:1.0.1"
@@ -4794,11 +4779,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.9.0":
-  version: 2.9.9
-  resolution: "baseline-browser-mapping@npm:2.9.9"
+  version: 2.9.10
+  resolution: "baseline-browser-mapping@npm:2.9.10"
   bin:
     baseline-browser-mapping: dist/cli.js
-  checksum: c3bb28a9d6243623cdae1ee7bdd0fe3141403c877efa2410e514c512a48f0fbd02c8d338b0e19b274fb7d3d329ef95a343bad16d5332654e1b7ab9cbb2af2de6
+  checksum: 1f3f1857b9f603949b921a874e084d99e17b9574132ceab9ef435ef53f0757b3c60ed1e6bb6923c0d14acd3bd39bac5e963e99fab89b487a152775453b9c679d
   languageName: node
   linkType: hard
 
@@ -7575,23 +7560,20 @@ __metadata:
   linkType: hard
 
 "get-intrinsic@npm:^1.2.4, get-intrinsic@npm:^1.2.5, get-intrinsic@npm:^1.2.6, get-intrinsic@npm:^1.2.7, get-intrinsic@npm:^1.3.0":
-  version: 1.3.1
-  resolution: "get-intrinsic@npm:1.3.1"
+  version: 1.3.0
+  resolution: "get-intrinsic@npm:1.3.0"
   dependencies:
-    async-function: ^1.0.0
-    async-generator-function: ^1.0.0
     call-bind-apply-helpers: ^1.0.2
     es-define-property: ^1.0.1
     es-errors: ^1.3.0
     es-object-atoms: ^1.1.1
     function-bind: ^1.1.2
-    generator-function: ^2.0.0
     get-proto: ^1.0.1
     gopd: ^1.2.0
     has-symbols: ^1.1.0
     hasown: ^2.0.2
     math-intrinsics: ^1.1.0
-  checksum: c02b3b6a445f9cd53e14896303794ac60f9751f58a69099127248abdb0251957174c6524245fc68579dc8e6a35161d3d94c93e665f808274716f4248b269436a
+  checksum: 301008e4482bb9a9cb49e132b88fee093bff373b4e6def8ba219b1e96b60158a6084f273ef5cafe832e42cd93462f4accb46a618d35fe59a2b507f2388c5b79d
   languageName: node
   linkType: hard
 
@@ -7764,6 +7746,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"glob@npm:*, glob@npm:^13.0.0":
+  version: 13.0.0
+  resolution: "glob@npm:13.0.0"
+  dependencies:
+    minimatch: ^10.1.1
+    minipass: ^7.1.2
+    path-scurry: ^2.0.0
+  checksum: 963730222b0acc85a0d2616c08ba3a5d5b5f33fbf69182791967b8a02245db505577a6fc19836d5d58e1cbbfb414ad4f62f605a0372ab05cd9e6998efe944369
+  languageName: node
+  linkType: hard
+
 "glob@npm:7.1.4":
   version: 7.1.4
   resolution: "glob@npm:7.1.4"
@@ -7791,17 +7784,6 @@ __metadata:
   bin:
     glob: dist/esm/bin.mjs
   checksum: cda96c074878abca9657bd984d2396945cf0d64283f6feeb40d738fe2da642be0010ad5210a1646244a5fc3511b0cab5a374569b3de5a12b8a63d392f18c6043
-  languageName: node
-  linkType: hard
-
-"glob@npm:^13.0.0":
-  version: 13.0.0
-  resolution: "glob@npm:13.0.0"
-  dependencies:
-    minimatch: ^10.1.1
-    minipass: ^7.1.2
-    path-scurry: ^2.0.0
-  checksum: 963730222b0acc85a0d2616c08ba3a5d5b5f33fbf69182791967b8a02245db505577a6fc19836d5d58e1cbbfb414ad4f62f605a0372ab05cd9e6998efe944369
   languageName: node
   linkType: hard
 
@@ -9974,9 +9956,9 @@ __metadata:
   linkType: hard
 
 "memoize-one@npm:^4.0.0":
-  version: 4.0.3
-  resolution: "memoize-one@npm:4.0.3"
-  checksum: addd18c046542f57440ba70bf8ebd48663d17626cade681f777522ef70900a87ec72c5041bed8ece4f6d40a2cb58803bae388b50a4b740d64f36bcda20c147b7
+  version: 4.1.0
+  resolution: "memoize-one@npm:4.1.0"
+  checksum: 5a0c5a0795c4af01649797dc7a417d441edda6e5933510aebd47b57a1ea84d31c42092aee03b0d1d969c102b57d45ba673b593228cd507c82e577a69847dfbae
   languageName: node
   linkType: hard
 
@@ -14336,8 +14318,8 @@ __metadata:
   linkType: hard
 
 "webpack@npm:^5.76.1, webpack@npm:^5.76.3, webpack@npm:^5.77.0":
-  version: 5.104.0
-  resolution: "webpack@npm:5.104.0"
+  version: 5.104.1
+  resolution: "webpack@npm:5.104.1"
   dependencies:
     "@types/eslint-scope": ^3.7.7
     "@types/estree": ^1.0.8
@@ -14369,7 +14351,7 @@ __metadata:
       optional: true
   bin:
     webpack: bin/webpack.js
-  checksum: f4f6b14a053fa1298120270df246806e8cbdb40f8fc27b9089c2acb6d4359f134ddb6dde20809fd0b3706f659b325ef30ac18f8e9b41b122fa0b36d774bbc40a
+  checksum: 4d187c246da5c03215a9a583682d1b8972fa0c5a446ba479d63507fe2d844dacf88a46ff7f3133dba22f07f1482f866b14e84c509c0f371ae7ad9316cad83fcb
   languageName: node
   linkType: hard
 

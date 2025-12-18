@@ -2,6 +2,41 @@
 
 <!-- <START NEW CHANGELOG ENTRY> -->
 
+## 3.4.0
+
+([Full Changelog](https://github.com/jupytercad/JupyterCAD/compare/@jupytercad/base@3.1.7...61b5513d1ec7e03ee243b3f6632442b36bdc23ec))
+
+### Enhancements made
+
+- Adds support for the `sketch` capability to the `CadDocument` class [#805](https://github.com/jupytercad/JupyterCAD/pull/805) ([@asmith26](https://github.com/asmith26), [@arjxn-py](https://github.com/arjxn-py), [@trungleduc](https://github.com/trungleduc))
+- Adds support for the `extrusion` capability to the `CadDocument` class. [#804](https://github.com/jupytercad/JupyterCAD/pull/804) ([@asmith26](https://github.com/asmith26), [@arjxn-py](https://github.com/arjxn-py), [@trungleduc](https://github.com/trungleduc))
+
+### Bugs fixed
+
+- Fix pressing delete key in form from deleting entire object. [#784](https://github.com/jupytercad/JupyterCAD/pull/784) ([@asmith26](https://github.com/asmith26), [@martinRenou](https://github.com/martinRenou), [@trungleduc](https://github.com/trungleduc))
+
+### Maintenance and upkeep improvements
+
+- Update releaser for trusted publishers [#829](https://github.com/jupytercad/JupyterCAD/pull/829) ([@martinRenou](https://github.com/martinRenou))
+- Rebuild with latest JS dependencies [#828](https://github.com/jupytercad/JupyterCAD/pull/828) ([@martinRenou](https://github.com/martinRenou))
+- Update jupyter-collaboration [#827](https://github.com/jupytercad/JupyterCAD/pull/827) ([@martinRenou](https://github.com/martinRenou), [@arjxn-py](https://github.com/arjxn-py))
+- Get away from hatch build [#822](https://github.com/jupytercad/JupyterCAD/pull/822) ([@martinRenou](https://github.com/martinRenou), [@trungleduc](https://github.com/trungleduc))
+
+### Documentation improvements
+
+- Add deployment instructions for JupyterCAD with JupyterLite [#808](https://github.com/jupytercad/JupyterCAD/pull/808) ([@arjxn-py](https://github.com/arjxn-py), [@trungleduc](https://github.com/trungleduc))
+
+### Contributors to this release
+
+The following people contributed discussions, new ideas, code and documentation contributions, and review.
+See [our definition of contributors](https://github-activity.readthedocs.io/en/latest/#how-does-this-tool-define-contributions-in-the-reports).
+
+([GitHub contributors page for this release](https://github.com/jupytercad/JupyterCAD/graphs/contributors?from=2025-09-18&to=2025-12-18&type=c))
+
+@arjxn-py ([activity](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Aarjxn-py+updated%3A2025-09-18..2025-12-18&type=Issues)) | @asmith26 ([activity](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Aasmith26+updated%3A2025-09-18..2025-12-18&type=Issues)) | @martinRenou ([activity](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3AmartinRenou+updated%3A2025-09-18..2025-12-18&type=Issues)) | @trungleduc ([activity](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Atrungleduc+updated%3A2025-09-18..2025-12-18&type=Issues))
+
+<!-- <END NEW CHANGELOG ENTRY> -->
+
 ## 3.1.7
 
 ([Full Changelog](https://github.com/jupytercad/JupyterCAD/compare/v3.1.6...fee0d2a3870c2935cd62139f4961ee47c523c099))
@@ -25,8 +60,6 @@
 ([GitHub contributors page for this release](https://github.com/jupytercad/JupyterCAD/graphs/contributors?from=2025-08-18&to=2025-09-18&type=c))
 
 [@asmith26](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Aasmith26+updated%3A2025-08-18..2025-09-18&type=Issues) | [@github-actions](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Agithub-actions+updated%3A2025-08-18..2025-09-18&type=Issues) | [@jtpio](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Ajtpio+updated%3A2025-08-18..2025-09-18&type=Issues) | [@pre-commit-ci](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Apre-commit-ci+updated%3A2025-08-18..2025-09-18&type=Issues) | [@trungleduc](https://github.com/search?q=repo%3Ajupytercad%2FJupyterCAD+involves%3Atrungleduc+updated%3A2025-08-18..2025-09-18&type=Issues)
-
-<!-- <END NEW CHANGELOG ENTRY> -->
 
 ## 3.1.6
 
